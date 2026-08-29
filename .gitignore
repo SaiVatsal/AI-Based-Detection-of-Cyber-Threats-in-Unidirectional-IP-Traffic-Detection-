@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+*.db
+
+# Data
+data/models/*.joblib
+data/reports/*.pdf
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
