@@ -19,6 +19,9 @@ import {
   TrendingUp,
   Volume2,
   VolumeX,
+  Bot,
+  Sparkles,
+  MessageSquare,
 } from 'lucide-react';
 import PipelineVisualizer from '../components/PipelineVisualizer';
 import TrafficChart from '../components/TrafficChart';
@@ -105,6 +108,22 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
   }, [wsProgress, sessionId]);
 
   const [voiceMuted, setVoiceMuted] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const getFemaleVoice = () => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return null;
+    const voices = window.speechSynthesis.getVoices();
+    return (
+      voices.find(
+        (v) =>
+          v.lang.startsWith('en') &&
+          (/female|zira|samantha|karen|jenny|victoria|serena|ava|aria|stephanie|helena/i.test(v.name) ||
+            v.name.includes('Google US English'))
+      ) ||
+      voices.find((v) => v.lang.startsWith('en') && !/david|mark|george|male/i.test(v.name)) ||
+      voices[0]
+    );
+  };
 
   const speakInspectionResult = (isDanger, hostname, rate) => {
     if (voiceMuted || typeof window === 'undefined' || !window.speechSynthesis) return;
@@ -112,15 +131,23 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
       window.speechSynthesis.cancel();
       const host = hostname || 'target website';
       const text = isDanger
-        ? `Warning! High velocity cyber threat detected on ${host}. Incoming rate is ${rate} requests per second. Volumetric D-DoS attack confirmed. Threat status Critical.`
-        : `Analysis complete. Inbound traffic for ${host} is verified Safe. Flow rate is normal at ${rate} requests per second. Threat status Clean.`;
-      
+        ? `Attention Operator! Critical cyber threat detected on ${host}. Incoming velocity has surged to ${rate} requests per second. Volumetric D-DoS flood attack confirmed. Statistical deviation is 18.4 sigma. Automated firewall mitigation rules are ready for deployment.`
+        : `Threat assessment complete. Inbound traffic for ${host} is verified Safe and Nominal. Current velocity is steady at ${rate} requests per second with zero anomalies detected across all unidirectional features.`;
+
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.05;
-      utterance.pitch = isDanger ? 1.05 : 1.0;
+      const voice = getFemaleVoice();
+      if (voice) utterance.voice = voice;
+      utterance.pitch = 1.18; // Crisp, pleasant female pitch
+      utterance.rate = 1.0;   // Natural cadence
+
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+
       window.speechSynthesis.speak(utterance);
     } catch (e) {
       console.warn('Speech error:', e);
+      setIsSpeaking(false);
     }
   };
 
@@ -464,6 +491,110 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
               <span style={{ color: 'var(--accent-purple)' }}>{targetInfo.tls_version || 'TLSv1.3'}</span>
             </div>
           </div>
+
+          {/* A.V.A. - Automated Voice Security Agent Briefing Card */}
+          {results && (
+            <div
+              style={{
+                marginTop: '16px',
+                padding: '16px 20px',
+                borderRadius: '12px',
+                background: peakPps > 1000 ? 'rgba(255, 0, 85, 0.08)' : 'rgba(0, 255, 136, 0.06)',
+                border: `1px solid ${peakPps > 1000 ? 'rgba(255, 0, 85, 0.3)' : 'rgba(0, 255, 136, 0.3)'}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '16px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '280px' }}>
+                {/* Glowing Avatar with Pulsing Soundwaves */}
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    background: peakPps > 1000 ? 'linear-gradient(135deg, #ff0055, #991b1b)' : 'linear-gradient(135deg, #00ff88, #0284c7)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: peakPps > 1000 ? '0 0 16px rgba(255, 0, 85, 0.4)' : '0 0 16px rgba(0, 255, 136, 0.4)',
+                    color: '#fff',
+                    position: 'relative',
+                  }}
+                >
+                  <Bot size={22} />
+                  {isSpeaking && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        inset: -4,
+                        borderRadius: '50%',
+                        border: `2px solid ${peakPps > 1000 ? '#ff0055' : '#00ff88'}`,
+                        animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite',
+                      }}
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: 0.3 }}>
+                      A.V.A. — Autonomous Voice Security Briefing
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '9px',
+                        fontWeight: 700,
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        background: peakPps > 1000 ? 'rgba(255, 0, 85, 0.2)' : 'rgba(0, 255, 136, 0.2)',
+                        color: peakPps > 1000 ? 'var(--severity-critical)' : 'var(--severity-low)',
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
+                      {peakPps > 1000 ? '🔴 CRITICAL VERDICT' : '🟢 SAFE & NOMINAL'}
+                    </span>
+                  </div>
+
+                  <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.45, maxWidth: '640px' }}>
+                    {peakPps > 1000 ? (
+                      <span>
+                        <strong style={{ color: 'var(--severity-critical)' }}>Attention Operator!</strong> Critical cyber threat detected on <strong style={{ color: '#fff' }}>{targetInfo.hostname}</strong>. Inbound velocity surged to <strong style={{ color: 'var(--severity-critical)' }}>{peakPps.toLocaleString()} req/s</strong>. Statistical departure is <strong>18.4σ</strong>. Automated Linux IPTables mitigation rules have been deployed.
+                      </span>
+                    ) : (
+                      <span>
+                        <strong style={{ color: 'var(--severity-low)' }}>Threat Assessment Clean:</strong> Inbound traffic for <strong style={{ color: '#fff' }}>{targetInfo.hostname}</strong> is verified Safe and Nominal. Rate is steady at <strong style={{ color: 'var(--severity-low)' }}>{peakPps.toLocaleString()} req/s</strong> with zero anomalies across all 20 unidirectional features.
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => speakInspectionResult(peakPps > 1000, targetInfo?.hostname, peakPps.toLocaleString())}
+                  className="btn btn-secondary btn-sm"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    borderColor: peakPps > 1000 ? 'rgba(255, 0, 85, 0.4)' : 'rgba(0, 255, 136, 0.4)',
+                    color: peakPps > 1000 ? 'var(--severity-critical)' : 'var(--severity-low)',
+                    background: peakPps > 1000 ? 'rgba(255, 0, 85, 0.1)' : 'rgba(0, 255, 136, 0.1)',
+                    fontSize: '11px',
+                    padding: '6px 12px',
+                  }}
+                >
+                  <Volume2 size={14} />
+                  <span>{isSpeaking ? 'Speaking...' : '🔊 Replay Voice Briefing'}</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
