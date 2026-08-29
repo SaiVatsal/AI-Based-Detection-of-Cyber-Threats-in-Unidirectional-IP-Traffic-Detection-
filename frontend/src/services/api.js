@@ -60,13 +60,14 @@ export const login = withFallback(
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
   },
-  () => mockApi.login()
+  (username, password) => mockApi.login(username, password)
 );
 
 export const getMe = withFallback(
   () => api.get('/auth/me'),
-  () => mockApi.login()
+  () => Promise.resolve({ data: { username: "2500040224", role: "admin", full_name: "Lead Security Architect (2500040224)" } })
 );
+
 
 // Traffic
 export const simulateTraffic = withFallback(

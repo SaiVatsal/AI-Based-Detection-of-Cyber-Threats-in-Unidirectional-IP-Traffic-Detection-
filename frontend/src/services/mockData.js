@@ -246,7 +246,20 @@ export const mockApi = {
   updateDetectionConfig: () => Promise.resolve({ data: {} }),
   generateReport: () => Promise.resolve({ data: { id: 1, message: "Report generated" } }),
   getReports: () => Promise.resolve({ data: [] }),
-  login: () => Promise.resolve({
-    data: { access_token: "demo-token-campusshield", username: "admin", full_name: "Demo Admin", role: "admin" },
-  }),
+  login: (username, password) => {
+    if (username === "2500040224" && password === "Bitcoin@100") {
+      return Promise.resolve({
+        data: {
+          access_token: "jwt-token-campusshield-2500040224",
+          username: "2500040224",
+          full_name: "Lead Security Architect (2500040224)",
+          role: "admin",
+        },
+      });
+    }
+    return Promise.reject({
+      response: { data: { detail: "Invalid username or password. Access restricted." } },
+    });
+  },
 };
+
