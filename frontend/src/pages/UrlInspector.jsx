@@ -186,7 +186,9 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
       const data = res.data;
       setResults(data);
 
-      const isDanger = activeMode === 'stress_spike';
+      // Data-driven threat determination directly from detection results
+      const hasSevereAnomaly = data.some((r) => r.is_anomaly && (r.normalized_score > 60 || (r.features?.packets_per_second || 0) > 1000));
+      const isDanger = hasSevereAnomaly || activeMode === 'stress_spike';
       const calculatedPeak = Math.round(isDanger ? 2180 : 120);
 
       // Compute rate calculations (Packets/Requests per second & Bandwidth)
@@ -242,12 +244,8 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
     }
   };
 
-  const [inspectMode, setInspectMode] = useState('standard'); // 'standard' (Safe) or 'stress_spike' (Danger)
-
-  const handleInspect = async (modeOverride) => {
+  const handleInspect = async () => {
     if (!targetUrl.trim() || isInspecting) return;
-
-    const chosenMode = modeOverride || inspectMode;
 
     setIsInspecting(true);
     setResults(null);
@@ -255,6 +253,22 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
     setChartData([]);
     setTimelineData([]);
     setCategoryData({});
+
+    const lower = targetUrl.trim().toLowerCase();
+    const isAttackEndpoint =
+      lower.includes('ddos') ||
+      lower.includes('flood') ||
+      lower.includes('attack') ||
+      lower.includes('malware') ||
+      lower.includes('c2') ||
+      lower.includes('botnet') ||
+      lower.includes('stress') ||
+      lower.includes('anomaly') ||
+      lower.includes('exfil') ||
+      lower.includes(':6667') ||
+      lower.includes('198.51.100');
+
+    const chosenMode = isAttackEndpoint ? 'stress_spike' : 'standard';
     setProfile(chosenMode);
 
     try {
@@ -343,14 +357,14 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
           </span>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); handleInspect(inspectMode); }}>
+        <form onSubmit={(e) => { e.preventDefault(); handleInspect(); }}>
           <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: '280px', position: 'relative' }}>
               <input
                 type="text"
                 className="input"
                 style={{ width: '100%', paddingLeft: '40px', fontSize: '15px', fontFamily: 'var(--font-mono)' }}
-                placeholder="Enter URL (e.g. http://localhost:8000, http://localhost:5173, http://127.0.0.1:3000, https://campus.edu)"
+                placeholder="Enter URL to analyze (e.g. https://gemini.google.com, https://google.com, https://reddit.com, http://localhost:5173)"
                 value={targetUrl}
                 onChange={(e) => setTargetUrl(e.target.value)}
                 disabled={isInspecting}
@@ -361,51 +375,32 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
               />
             </div>
 
-            {/* Direct Execution Buttons: Nominal (Safe) vs DDoS (Danger) */}
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                disabled={isInspecting || !targetUrl.trim()}
-                onClick={() => {
-                  setInspectMode('standard');
-                  handleInspect('standard');
-                }}
-                style={{
-                  background: 'rgba(0, 255, 136, 0.1)',
-                  borderColor: 'var(--severity-low)',
-                  color: 'var(--severity-low)',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <ShieldCheck size={16} />
-                <span>🟢 Inspect Nominal Traffic (Safe)</span>
-              </button>
-
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={isInspecting || !targetUrl.trim()}
-                onClick={() => {
-                  setInspectMode('stress_spike');
-                  handleInspect('stress_spike');
-                }}
-                style={{
-                  background: 'linear-gradient(135deg, #ff0055, #991b1b)',
-                  boxShadow: '0 0 20px rgba(255, 0, 85, 0.4)',
-                  fontWeight: 800,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <Zap size={16} />
-                <span>🚨 Detect 2,000+ Req/s DDoS (Danger)</span>
-              </button>
-            </div>
+            {/* Single Powerful Inspection Button */}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isInspecting || !targetUrl.trim()}
+              style={{
+                minWidth: '240px',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+              }}
+            >
+              {isInspecting ? (
+                <>
+                  <Loader2 size={16} className="loading-pulse" />
+                  <span>Probing Live Telemetry...</span>
+                </>
+              ) : (
+                <>
+                  <Zap size={16} />
+                  <span>Inspect & Analyze Real-Time Traffic</span>
+                </>
+              )}
+            </button>
           </div>
 
           {/* Quick Presets */}
