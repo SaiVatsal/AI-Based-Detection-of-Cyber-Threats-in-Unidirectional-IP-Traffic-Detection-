@@ -16,7 +16,7 @@ import ThreatDistribution from '../components/ThreatDistribution';
 import AlertFeed from '../components/AlertFeed';
 import SensitivityControl from '../components/SensitivityControl';
 import { getSessions, getAlertStats, getDetectionResults, getDetectionConfig } from '../services/api';
-
+/* import modeules  */
 export default function Dashboard({ wsAlerts = [], wsProgress }) {
   const [sessions, setSessions] = useState([]);
   const [alertStats, setAlertStats] = useState(null);
