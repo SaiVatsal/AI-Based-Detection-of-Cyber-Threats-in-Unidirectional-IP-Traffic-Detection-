@@ -17,6 +17,7 @@ import http.client
 from typing import Literal
 
 from backend.config import SIMULATION_PACKET_COUNT
+from backend.threat_intel.threat_intel_service import get_unified_threat_intel
 
 
 def probe_live_target(url: str) -> dict:
@@ -119,6 +120,9 @@ def probe_live_target(url: str) -> dict:
     elif hostname.startswith("10.") or hostname.startswith("192.168.") or hostname in ("localhost", "127.0.0.1"):
         provider = "Internal Campus Network / Localhost"
 
+    # Perform live AbuseIPDB + VirusTotal Threat Intelligence check
+    threat_intel = get_unified_threat_intel(url, resolved_ip, hostname)
+
     return {
         "original_url": url,
         "normalized_url": cleaned_url,
@@ -136,6 +140,7 @@ def probe_live_target(url: str) -> dict:
         "tls_version": tls_version,
         "tls_cipher": tls_cipher,
         "provider": provider,
+        "threat_intel": threat_intel,
     }
 
 

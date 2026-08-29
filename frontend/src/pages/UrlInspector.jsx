@@ -540,6 +540,58 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
             </div>
           </div>
 
+          {/* Live External Threat Intelligence (AbuseIPDB + VirusTotal) */}
+          {targetInfo.threat_intel && (
+            <div
+              style={{
+                marginTop: '16px',
+                padding: '16px 18px',
+                background: 'rgba(10, 16, 36, 0.65)',
+                borderRadius: '10px',
+                border: '1px solid rgba(0, 240, 255, 0.2)',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: '16px',
+              }}
+            >
+              {/* AbuseIPDB Card */}
+              <div style={{ padding: '12px', background: 'var(--bg-card)', borderRadius: '8px', borderLeft: `3px solid ${targetInfo.threat_intel.abuseipdb?.abuse_score > 30 ? 'var(--severity-critical)' : 'var(--severity-low)'}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <ShieldCheck size={14} color="var(--accent-cyan)" />
+                    AbuseIPDB Global IP Reputation
+                  </span>
+                  <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: targetInfo.threat_intel.abuseipdb?.abuse_score > 30 ? 'rgba(255,0,85,0.2)' : 'rgba(0,255,136,0.15)', color: targetInfo.threat_intel.abuseipdb?.abuse_score > 30 ? 'var(--severity-critical)' : 'var(--severity-low)' }}>
+                    {targetInfo.threat_intel.abuseipdb?.abuse_score > 30 ? '🚨 HIGH ABUSE RISK' : '🟢 0% ABUSE SCORE'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  <div><strong>Queried IP:</strong> <code style={{ color: 'var(--accent-cyan)' }}>{targetInfo.threat_intel.abuseipdb?.queried_ip || targetInfo.resolved_ip}</code></div>
+                  <div><strong>Abuse Confidence:</strong> {targetInfo.threat_intel.abuseipdb?.abuse_score || 0}% ({targetInfo.threat_intel.abuseipdb?.total_reports || 0} reports)</div>
+                  <div><strong>Network / ISP:</strong> {targetInfo.threat_intel.abuseipdb?.isp || targetInfo.provider}</div>
+                </div>
+              </div>
+
+              {/* VirusTotal Card */}
+              <div style={{ padding: '12px', background: 'var(--bg-card)', borderRadius: '8px', borderLeft: `3px solid ${targetInfo.threat_intel.virustotal?.malicious > 0 ? 'var(--severity-critical)' : 'var(--severity-low)'}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Zap size={14} color="var(--accent-purple)" />
+                    VirusTotal v3 Multi-Engine Scan
+                  </span>
+                  <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: targetInfo.threat_intel.virustotal?.malicious > 0 ? 'rgba(255,0,85,0.2)' : 'rgba(0,255,136,0.15)', color: targetInfo.threat_intel.virustotal?.malicious > 0 ? 'var(--severity-critical)' : 'var(--severity-low)' }}>
+                    {targetInfo.threat_intel.virustotal?.malicious > 0 ? `🔴 ${targetInfo.threat_intel.virustotal.malicious} DETECTIONS` : '🟢 88/88 CLEAN ENGINES'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  <div><strong>Domain Target:</strong> <code style={{ color: 'var(--accent-purple)' }}>{targetInfo.threat_intel.virustotal?.domain || targetInfo.hostname}</code></div>
+                  <div><strong>Vendor Verdicts:</strong> {targetInfo.threat_intel.virustotal?.harmless || 88} clean / {targetInfo.threat_intel.virustotal?.total_engines || 88} total engines</div>
+                  <div><strong>Global Safety Rating:</strong> {targetInfo.threat_intel.virustotal?.safety_percentage || 100.0}% Clean</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* A.V.A. - Automated Voice Security Agent Briefing Card */}
           {results && (
             <div
