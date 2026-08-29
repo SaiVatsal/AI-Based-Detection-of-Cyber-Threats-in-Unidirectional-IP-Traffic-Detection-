@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import UrlInspector from './pages/UrlInspector';
 import ReplayDemo from './pages/ReplayDemo';
 import AlertsPage from './pages/AlertDetail';
 import Reports from './pages/Reports';
@@ -19,6 +20,10 @@ function ProtectedLayout({ user, onLogout }) {
           <Route
             path="/"
             element={<Dashboard wsAlerts={alerts} wsProgress={progress} />}
+          />
+          <Route
+            path="/inspect"
+            element={<UrlInspector wsAlerts={alerts} wsProgress={progress} />}
           />
           <Route
             path="/demo"

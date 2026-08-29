@@ -30,6 +30,8 @@ from backend.scoring.explainer import generate_contributing_factors, generate_ex
 from backend.alerts.manager import create_and_broadcast_alert, should_alert
 from backend.alerts.websocket import broadcast_progress
 
+from backend.ingestion.url_inspector import parse_target_url, generate_url_traffic
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/traffic", tags=["Traffic Ingestion"])
 
@@ -37,6 +39,11 @@ router = APIRouter(prefix="/api/traffic", tags=["Traffic Ingestion"])
 # ---------------------------------------------------------------------------
 # Schemas
 # ---------------------------------------------------------------------------
+class InspectUrlRequest(BaseModel):
+    url: str
+    traffic_profile: str = "standard"  # standard | stress_spike | sweep_probe | payload_anomaly | exfil_probe
+    packet_count: int = 1500
+
 class SessionResponse(BaseModel):
     id: int
     name: str
@@ -408,6 +415,58 @@ async def start_simulation(
         "message": f"Simulation '{scenario}' started",
         "session_id": session.id,
         "scenario": desc,
+        "packet_count": len(packets),
+    }
+
+
+@router.post("/inspect-url")
+def inspect_url(
+    body: InspectUrlRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Inspect a target URL / host.
+    Generates and analyzes unidirectional traffic telemetry targeting the specified URL
+    under the requested traffic profile (standard, stress spike, scan sweep, etc.).
+    """
+    if not body.url or not body.url.strip():
+        raise HTTPException(status_code=400, detail="Target URL cannot be empty")
+
+    target_info = parse_target_url(body.url)
+    profile = body.traffic_profile if body.traffic_profile in [
+        "standard", "stress_spike", "sweep_probe", "payload_anomaly", "exfil_probe"
+    ] else "standard"
+
+    # Create session
+    session = crud.create_session(
+        db=db,
+        name=f"URL Inspect: {target_info['normalized_url']} ({profile})",
+        source_type="url_inspector",
+        scenario=profile,
+        user_id=current_user.id,
+    )
+
+    log_action(
+        db,
+        action="inspect_url",
+        user_id=current_user.id,
+        resource_type="session",
+        resource_id=session.id,
+        details={"url": body.url, "target_info": target_info, "profile": profile},
+    )
+
+    # Generate telemetry targeting this URL
+    packets = generate_url_traffic(target_info, profile, body.packet_count)
+
+    # Run detection pipeline in background
+    asyncio.create_task(run_detection_pipeline(db, session.id, packets, current_user.id))
+
+    return {
+        "message": f"Inspection started for {target_info['normalized_url']}",
+        "session_id": session.id,
+        "target_info": target_info,
+        "profile": profile,
         "packet_count": len(packets),
     }
 

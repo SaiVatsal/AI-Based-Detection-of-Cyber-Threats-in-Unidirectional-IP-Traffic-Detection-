@@ -127,6 +127,25 @@ export const mockApi = {
   },
   getScenarios: () => Promise.resolve({ data: MOCK_SCENARIOS }),
   simulateTraffic: () => Promise.resolve({ data: { session_id: 2, message: "Simulation complete" } }),
+  inspectUrl: (data) => {
+    const isLocal = data.url.includes("localhost") || data.url.includes("127.0.0.1");
+    return Promise.resolve({
+      data: {
+        session_id: 2,
+        message: `Inspection complete for ${data.url}`,
+        target_info: {
+          original_url: data.url,
+          normalized_url: data.url.startsWith("http") ? data.url : `http://${data.url}`,
+          hostname: isLocal ? "localhost" : data.url.replace(/https?:\/\//, "").split("/")[0],
+          port: data.url.includes(":8000") ? 8000 : data.url.includes(":5173") ? 5173 : data.url.startsWith("https") ? 443 : 80,
+          resolved_ip: isLocal ? "127.0.0.1" : "192.0.2.1",
+          is_resolvable: true,
+        },
+        profile: data.traffic_profile || "standard",
+        packet_count: data.packet_count || 1500,
+      }
+    });
+  },
   updateDetectionConfig: () => Promise.resolve({ data: MOCK_CONFIG }),
   generateReport: () => Promise.resolve({ data: { id: 1, message: "Report generated" } }),
   getReports: () => Promise.resolve({ data: [] }),

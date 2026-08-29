@@ -73,6 +73,10 @@ export const simulateTraffic = withFallback(
   (scenario, packetCount = 2000) => api.post(`/traffic/simulate/${scenario}`, { packet_count: packetCount }),
   () => mockApi.simulateTraffic()
 );
+export const inspectUrl = withFallback(
+  (data) => api.post('/traffic/inspect-url', data),
+  (data) => mockApi.inspectUrl(data)
+);
 export const getSessions = withFallback(() => api.get('/traffic/sessions'), () => mockApi.getSessions());
 export const getSession = withFallback((id) => api.get(`/traffic/sessions/${id}`), (id) => mockApi.getSession(id));
 export const getScenarios = withFallback(() => api.get('/traffic/scenarios'), () => mockApi.getScenarios());

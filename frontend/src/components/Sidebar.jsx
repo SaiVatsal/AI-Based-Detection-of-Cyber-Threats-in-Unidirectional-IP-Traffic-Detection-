@@ -7,10 +7,12 @@ import {
   FileText,
   Settings,
   LogOut,
+  Globe,
 } from 'lucide-react';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/inspect', icon: Globe, label: 'URL Inspector' },
   { to: '/demo', icon: PlayCircle, label: 'Replay Demo' },
   { to: '/alerts', icon: Bell, label: 'Alerts' },
   { to: '/reports', icon: FileText, label: 'Reports' },
