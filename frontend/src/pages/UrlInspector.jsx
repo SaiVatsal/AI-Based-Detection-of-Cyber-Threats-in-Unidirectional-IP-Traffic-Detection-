@@ -271,8 +271,8 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
           </div>
 
           {/* Quick Presets */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginRight: '4px' }}>Quick Targets:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginRight: '4px' }}>Target Presets:</span>
             {QUICK_PRESETS.map((p) => (
               <button
                 key={p.url}
@@ -293,29 +293,10 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
             ))}
           </div>
 
-          {/* Request Count Scale */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', padding: '10px 14px', background: 'var(--bg-card)', borderRadius: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-              Test Request Volume:
-            </span>
-            {[500, 1000, 2000, 5000].map((count) => (
-              <button
-                key={count}
-                type="button"
-                className={`btn btn-sm ${packetCount === count ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ fontSize: '11px', padding: '4px 12px' }}
-                onClick={() => setPacketCount(count)}
-                disabled={isInspecting}
-              >
-                {count.toLocaleString()} Requests {count >= 2000 ? '⚡ (2,000+ req/s)' : ''}
-              </button>
-            ))}
-          </div>
-
-          {/* Traffic Profile Selector */}
+          {/* Traffic Profile Vector */}
           <div style={{ marginBottom: '16px' }}>
             <label className="input-label" style={{ marginBottom: '10px', display: 'block' }}>
-              Traffic Profile Vector
+              Passive Traffic Telemetry Stream
             </label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
               {TRAFFIC_PROFILES.map((tp) => (
