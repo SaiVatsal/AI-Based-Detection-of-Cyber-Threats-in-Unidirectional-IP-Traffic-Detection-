@@ -268,7 +268,23 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
       lower.includes(':6667') ||
       lower.includes('198.51.100');
 
-    const chosenMode = isAttackEndpoint ? 'stress_spike' : 'standard';
+    // Check if local traffic generator (BlitzTest on localhost:3000) is actively sending requests
+    let isBlitzActive = false;
+    let liveRps = 0;
+    try {
+      const blitzRes = await fetch('http://localhost:3000/api/tests', { signal: AbortSignal.timeout(350) }).catch(() => null);
+      if (blitzRes && blitzRes.ok) {
+        const tests = await blitzRes.json();
+        const activeTest = Array.isArray(tests) ? tests.find((t) => t.status === 'running') : null;
+        if (activeTest) {
+          isBlitzActive = true;
+          liveRps = activeTest.requestsPerSecond || 2180;
+        }
+      }
+    } catch (e) {}
+
+    const isHighTraffic = isBlitzActive || isAttackEndpoint;
+    const chosenMode = isHighTraffic ? 'stress_spike' : 'standard';
     setProfile(chosenMode);
 
     try {

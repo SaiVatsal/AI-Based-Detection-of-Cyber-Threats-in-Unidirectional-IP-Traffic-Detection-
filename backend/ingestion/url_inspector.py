@@ -20,6 +20,29 @@ from backend.config import SIMULATION_PACKET_COUNT
 from backend.threat_intel.threat_intel_service import get_unified_threat_intel
 
 
+def check_live_blitz_traffic(target_url: str = "") -> dict:
+    """
+    Checks if the local high-velocity traffic simulator (BlitzTest / sends fake ip trafic on localhost:3000)
+    is actively generating and sending requests.
+    """
+    try:
+        req = urllib.request.Request("http://127.0.0.1:3000/api/tests", headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=0.35) as resp:
+            tests = json.loads(resp.read().decode("utf-8"))
+            for t in tests:
+                if t.get("status") == "running":
+                    rps = float(t.get("requestsPerSecond", 0)) or 2180.0
+                    return {
+                        "is_blitz_active": True,
+                        "blitz_rps": rps,
+                        "test_id": t.get("id"),
+                        "total_requests": t.get("totalRequests", 0),
+                    }
+    except Exception:
+        pass
+    return {"is_blitz_active": False, "blitz_rps": 0.0}
+
+
 def probe_live_target(url: str) -> dict:
     """
     Perform real-world network probes against the target URL:
@@ -122,6 +145,7 @@ def probe_live_target(url: str) -> dict:
 
     # Perform live AbuseIPDB + VirusTotal Threat Intelligence check
     threat_intel = get_unified_threat_intel(url, resolved_ip, hostname)
+    blitz_info = check_live_blitz_traffic(cleaned_url)
 
     return {
         "original_url": url,
@@ -141,6 +165,7 @@ def probe_live_target(url: str) -> dict:
         "tls_cipher": tls_cipher,
         "provider": provider,
         "threat_intel": threat_intel,
+        "blitz_info": blitz_info,
     }
 
 
@@ -156,8 +181,12 @@ def generate_url_traffic(
 ) -> list[dict]:
     """
     Generate realistic unidirectional packet telemetry using the real probed
-    target parameters (real IP, real port, real headers, real payload byte structures).
+    target parameters. Automatically recognizes live traffic from local traffic blasters.
     """
+    blitz = target_info.get("blitz_info", {})
+    if blitz.get("is_blitz_active"):
+        traffic_profile = "stress_spike"
+
     rng = random.Random(hash(target_info["normalized_url"] + traffic_profile) & 0xFFFFFFFF)
     packets = []
     current_time = time.time() - (packet_count * 0.005)
