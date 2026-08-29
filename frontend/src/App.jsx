@@ -55,9 +55,9 @@ function ProtectedLayout({ user, onLogout }) {
 
   return (
     <div className="app-layout">
-      <TopTelemetryBar user={user} />
       <Sidebar user={user} onLogout={onLogout} />
       <main className="main-content">
+        <TopTelemetryBar user={user} />
         <Routes>
           <Route
             path="/"
