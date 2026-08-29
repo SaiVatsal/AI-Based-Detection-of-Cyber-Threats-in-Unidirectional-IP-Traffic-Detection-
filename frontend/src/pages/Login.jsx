@@ -82,10 +82,6 @@ export default function Login({ onLogin }) {
             {loading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
-
-        <div className="login-demo-hint">
-          Demo: admin / admin123 &nbsp;·&nbsp; analyst / analyst123
-        </div>
       </div>
     </div>
   );

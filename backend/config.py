@@ -101,21 +101,15 @@ SIMULATION_SCENARIOS = [
 WS_HEARTBEAT_INTERVAL = int(os.getenv("WS_HEARTBEAT_INTERVAL", "30"))
 
 # ---------------------------------------------------------------------------
-# Demo Users (seeded on first run)
+# Authorized Users (Configured via Environment or Secure Defaults)
 # ---------------------------------------------------------------------------
 DEMO_USERS = [
     {
-        "username": "admin",
-        "password": "admin123",
-        "email": "admin@campusshield.ai",
+        "username": os.getenv("ADMIN_USERNAME", "vatsal_admin"),
+        "password": os.getenv("ADMIN_PASSWORD", "CampusShield@Secure2026"),
+        "email": os.getenv("ADMIN_EMAIL", "vatsal@campusshield.ai"),
         "role": "admin",
-        "full_name": "System Administrator",
-    },
-    {
-        "username": "analyst",
-        "password": "analyst123",
-        "email": "analyst@campusshield.ai",
-        "role": "analyst",
-        "full_name": "Security Analyst",
+        "full_name": os.getenv("ADMIN_FULLNAME", "Sai Vatsal (Lead Architect)"),
     },
 ]
+
