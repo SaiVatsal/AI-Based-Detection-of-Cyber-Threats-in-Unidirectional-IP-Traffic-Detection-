@@ -118,10 +118,84 @@ export default function AICopilotChat() {
     setIsTyping(true);
 
     setTimeout(() => {
-      let replyText = KNOWLEDGE_BASE.default;
+      let replyText = '';
       const lower = query.toLowerCase();
 
-      if (lower.includes('snort') || lower.includes('suricata') || lower.includes('fail') || lower.includes('traditional')) {
+      // 1. Strict Off-Topic & Generic Coding Detection
+      const isOffTopic =
+        lower.includes('bubble sort') ||
+        lower.includes('sorting algorithm') ||
+        lower.includes('quick sort') ||
+        lower.includes('merge sort') ||
+        lower.includes('linked list') ||
+        lower.includes('binary tree') ||
+        lower.includes('fibonacci') ||
+        lower.includes('calculator') ||
+        lower.includes('snake game') ||
+        lower.includes('tic tac toe') ||
+        lower.includes('poem') ||
+        lower.includes('recipe') ||
+        lower.includes('weather') ||
+        lower.includes('capital of') ||
+        lower.includes('who is') ||
+        lower.includes('movie') ||
+        lower.includes('joke');
+
+      // 2. Allowed Cybersecurity & SIH26145 Domain Keywords
+      const isCyberDomain =
+        lower.includes('traffic') ||
+        lower.includes('packet') ||
+        lower.includes('network') ||
+        lower.includes('flow') ||
+        lower.includes('diode') ||
+        lower.includes('unidirectional') ||
+        lower.includes('ddos') ||
+        lower.includes('flood') ||
+        lower.includes('c2') ||
+        lower.includes('botnet') ||
+        lower.includes('dga') ||
+        lower.includes('dns') ||
+        lower.includes('tunnel') ||
+        lower.includes('anomaly') ||
+        lower.includes('scan') ||
+        lower.includes('recon') ||
+        lower.includes('port') ||
+        lower.includes('exfil') ||
+        lower.includes('entropy') ||
+        lower.includes('shannon') ||
+        lower.includes('isolation') ||
+        lower.includes('forest') ||
+        lower.includes('threat') ||
+        lower.includes('firewall') ||
+        lower.includes('iptables') ||
+        lower.includes('waf') ||
+        lower.includes('nginx') ||
+        lower.includes('rate') ||
+        lower.includes('pps') ||
+        lower.includes('bps') ||
+        lower.includes('iat') ||
+        lower.includes('jitter') ||
+        lower.includes('virustotal') ||
+        lower.includes('abuseipdb') ||
+        lower.includes('snort') ||
+        lower.includes('suricata') ||
+        lower.includes('zeek') ||
+        lower.includes('sih') ||
+        lower.includes('campusshield') ||
+        lower.includes('mitigat') ||
+        lower.includes('security') ||
+        lower.includes('pcap') ||
+        lower.includes('features') ||
+        lower.includes('score') ||
+        lower.includes('inspect') ||
+        lower.includes('help') ||
+        lower.includes('hi') ||
+        lower.includes('hello') ||
+        lower.includes('who are you');
+
+      if (isOffTopic || !isCyberDomain) {
+        replyText = `🔒 **Operational Security Boundary**: I am **CampusShield AI**, an operational SOC security assistant engineered exclusively for **Unidirectional Network Telemetry, Cyber Threat Analysis, and SIH26145 Defense**.\n\nI do not answer general coding requests (like Bubble Sort or generic scripts) or off-topic queries. Please ask questions related to:\n• Data Diode passive flow constraints (0 return packets)\n• The 20 Unidirectional Feature Set & Shannon byte entropy\n• Isolation Forest anomaly scoring & threshold calibration\n• Linux IPTables firewall drop rules & Nginx WAF policies\n• Real-time AbuseIPDB & VirusTotal threat intelligence.`;
+      } else if (lower.includes('snort') || lower.includes('suricata') || lower.includes('fail') || lower.includes('traditional')) {
         replyText = KNOWLEDGE_BASE.snort;
       } else if (lower.includes('mitigate') || lower.includes('ddos') || lower.includes('iptables') || lower.includes('block')) {
         replyText = KNOWLEDGE_BASE.mitigate;
@@ -133,8 +207,12 @@ export default function AICopilotChat() {
         replyText = KNOWLEDGE_BASE.isolation;
       } else if (lower.includes('waf') || lower.includes('nginx') || lower.includes('rate-limit')) {
         replyText = KNOWLEDGE_BASE.waf;
+      } else if (lower.includes('virustotal') || lower.includes('abuseipdb') || lower.includes('intel') || lower.includes('reputation')) {
+        replyText = `Our backend is integrated live with **AbuseIPDB v2 API** and **VirusTotal v3 API**. When inspecting any target IP/URL, we cross-reference 70+ global antivirus engines and 90-day historical DDoS abuse reports, fusing global threat intelligence directly with our internal 20-feature unidirectional anomaly scoring!`;
+      } else if (lower.includes('hi') || lower.includes('hello') || lower.includes('who are you') || lower.includes('help')) {
+        replyText = `Hello Operator! 🛡️ I am **CampusShield AI SOC Copilot**. I am dedicated to monitoring one-way IP telemetry across optical data diodes, explaining AI anomaly scoring, and generating instant mitigation playbooks. How can I assist your defense operations today?`;
       } else {
-        replyText = `Under the SIH26145 unidirectional constraint, "${query}" is analyzed purely through passive flow features (arrival intervals, packet size moments, and Shannon byte entropy). Would you like me to generate specific firewall rules or detail our Isolation Forest scoring pipeline for this?`;
+        replyText = `Under the SIH26145 unidirectional constraint, "${query}" is evaluated using passive one-way flow features (inter-arrival variance, frame size moments, and Shannon byte entropy). Would you like me to generate specific firewall rules or detail our Isolation Forest scoring math for this?`;
       }
 
       const aiMsg = {
@@ -147,7 +225,7 @@ export default function AICopilotChat() {
       setMessages((prev) => [...prev, aiMsg]);
       setIsTyping(false);
       speak(replyText);
-    }, 600);
+    }, 500);
   };
 
   return (
