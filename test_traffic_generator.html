@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚡ High-Speed Traffic Generator & Load Tester</title>
+  <style>
+    :root {
+      --bg: #060a14;
+      --card: #0d1424;
+      --border: rgba(0, 240, 255, 0.2);
+      --cyan: #00f0ff;
+      --red: #ff0055;
+      --green: #00ff88;
+      --text: #f1f5f9;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      width: 100%;
+      max-width: 680px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 24px rgba(0, 240, 255, 0.15);
+    }
+    .header { text-align: center; margin-bottom: 24px; }
+    .header h1 { font-size: 24px; color: var(--cyan); letter-spacing: -0.5px; margin-bottom: 6px; }
+    .header p { font-size: 13px; color: var(--muted); }
+    
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .input-group { margin-bottom: 16px; }
+    .label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
+    input, select {
+      width: 100%;
+      padding: 12px 14px;
+      background: #040711;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    input:focus, select:focus { border-color: var(--cyan); box-shadow: 0 0 12px rgba(0, 240, 255, 0.2); }
+
+    .gauge-card {
+      background: #040711;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .gauge-val { font-size: 36px; font-weight: 900; font-family: monospace; color: var(--cyan); }
+    .gauge-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; margin-top: 4px; }
+
+    .btn-group { display: flex; gap: 12px; margin-bottom: 20px; }
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+    }
+    .btn-start {
+      background: linear-gradient(135deg, var(--cyan), #0284c7);
+      color: #030712;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+    }
+    .btn-start:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(0, 240, 255, 0.5); }
+    .btn-stop {
+      background: linear-gradient(135deg, var(--red), #991b1b);
+      color: #fff;
+    }
+    .btn-stop:hover { transform: translateY(-2px); box-shadow: 0 0 20px rgba(255, 0, 85, 0.4); }
+
+    .terminal {
+      background: #02040a;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 12px;
+      height: 140px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 11px;
+      color: var(--green);
+    }
+    .log-line { margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <h1>⚡ High-Speed Traffic Generator</h1>
+      <p>Blasts simulated 1,000 to 2,000+ requests/sec into CampusShield AI</p>
+    </div>
+
+    <div class="input-group">
+      <label class="label">Target Collector / Test URL</label>
+      <input type="text" id="targetUrl" value="http://localhost:8000/api/traffic/live-collector">
+    </div>
+
+    <div class="grid">
+      <div class="input-group">
+        <label class="label">Target Velocity</label>
+        <select id="rateSelect">
+          <option value="1000" selected>⚡ 1,000 Requests / Second</option>
+          <option value="2000">🔥 2,000 Requests / Second (Flood)</option>
+          <option value="500">500 Requests / Second</option>
+          <option value="100">100 Requests / Second (Nominal)</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label class="label">Simulated Attack Pattern</label>
+        <select id="attackType">
+          <option value="ddos" selected>Volumetric SYN Flood (SIH-a)</option>
+          <option value="botnet">Botnet C2 Beaconing (SIH-b)</option>
+          <option value="dns">DNS Tunneling Query (SIH-c)</option>
+          <option value="scan">Port Scan Recon (SIH-e)</option>
+          <option value="exfil">Data Exfiltration MTU (SIH-f)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="gauge-card">
+      <div>
+        <div class="gauge-val" id="sentCount">0</div>
+        <div class="gauge-lbl">Total Packets Sent</div>
+      </div>
+      <div>
+        <div class="gauge-val" id="currentPps" style="color: var(--green);">0</div>
+        <div class="gauge-lbl">Current Speed (Req/s)</div>
+      </div>
+      <div>
+        <div class="gauge-val" id="elapsedSec" style="color: var(--muted);">0.0s</div>
+        <div class="gauge-lbl">Time Elapsed</div>
+      </div>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn btn-start" id="startBtn" onclick="startTraffic()">🚀 Start Blast (1,000+ Req/s)</button>
+      <button class="btn btn-stop" id="stopBtn" onclick="stopTraffic()" disabled>⏹️ Stop</button>
+    </div>
+
+    <label class="label">Live Packet Stream Log</label>
+    <div class="terminal" id="termLog">
+      <div class="log-line">Ready. Click START BLAST to generate 1,000+ requests per second...</div>
+    </div>
+  </div>
+
+  <script>
+    let isRunning = false;
+    let totalSent = 0;
+    let startTime = null;
+    let intervalHandle = null;
+
+    function log(msg) {
+      const term = document.getElementById("termLog");
+      const div = document.createElement("div");
+      div.className = "log-line";
+      div.innerText = `[${new Date().toISOString().slice(11, 23)}] ${msg}`;
+      term.appendChild(div);
+      if (term.children.length > 50) term.removeChild(term.children[0]);
+      term.scrollTop = term.scrollHeight;
+    }
+
+    function startTraffic() {
+      if (isRunning) return;
+      isRunning = true;
+      totalSent = 0;
+      startTime = performance.now();
+
+      document.getElementById("startBtn").disabled = true;
+      document.getElementById("stopBtn").disabled = false;
+      document.getElementById("startBtn").style.opacity = "0.5";
+      document.getElementById("stopBtn").style.opacity = "1";
+
+      const targetUrl = document.getElementById("targetUrl").value;
+      const targetPps = parseInt(document.getElementById("rateSelect").value);
+      const attackType = document.getElementById("attackType").value;
+
+      log(`[+] BLAST INITIATED: Sending ${targetPps} req/s to ${targetUrl}...`);
+
+      const batchSize = Math.max(10, Math.floor(targetPps / 20)); // 20 batches per second
+      const batchInterval = 50; // ms
+
+      intervalHandle = setInterval(() => {
+        if (!isRunning) return;
+
+        for (let i = 0; i < batchSize; i++) {
+          totalSent++;
+          const spoofedIp = `198.51.100.${(totalSent % 250) + 1}`;
+          
+          // Non-blocking fetch payload
+          const payload = {
+            source_ip: spoofedIp,
+            path: `/test-${attackType}-${totalSent % 15}`,
+            method: totalSent % 2 === 0 ? "POST" : "GET",
+            payload_size: attackType === "exfil" ? 1400 : 64,
+            pattern: attackType,
+            timestamp: Date.now() / 1000
+          };
+
+          fetch(targetUrl, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          }).catch(() => {});
+        }
+
+        const elapsed = (performance.now() - startTime) / 1000;
+        const currentPps = Math.round(totalSent / Math.max(elapsed, 0.001));
+
+        document.getElementById("sentCount").innerText = totalSent.toLocaleString();
+        document.getElementById("currentPps").innerText = currentPps.toLocaleString();
+        document.getElementById("elapsedSec").innerText = `${elapsed.toFixed(1)}s`;
+
+        if (totalSent % (batchSize * 4) === 0) {
+          log(`→ Transmitted ${totalSent.toLocaleString()} packets | Rate: ${currentPps} req/s | Pattern: ${attackType.toUpperCase()}`);
+        }
+      }, batchInterval);
+    }
+
+    function stopTraffic() {
+      isRunning = false;
+      clearInterval(intervalHandle);
+      document.getElementById("startBtn").disabled = false;
+      document.getElementById("stopBtn").disabled = true;
+      document.getElementById("startBtn").style.opacity = "1";
+      document.getElementById("stopBtn").style.opacity = "0.5";
+      log(`[✓] BLAST STOPPED. Total transmitted: ${totalSent.toLocaleString()} packets.`);
+    }
+  </script>
+</body>
+</html>
