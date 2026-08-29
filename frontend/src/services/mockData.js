@@ -257,9 +257,33 @@ export const mockApi = {
         },
       });
     }
+    // Check if dynamic user was created during session
+    const registeredUser = JSON.parse(localStorage.getItem(`user_${username}`) || 'null');
+    if (registeredUser && registeredUser.password === password) {
+      return Promise.resolve({
+        data: {
+          access_token: `jwt-token-${username}`,
+          username: registeredUser.username,
+          full_name: registeredUser.full_name || registeredUser.username,
+          role: "analyst",
+        },
+      });
+    }
     return Promise.reject({
       response: { data: { detail: "Invalid username or password. Access restricted." } },
     });
   },
+  signup: (userData) => {
+    localStorage.setItem(`user_${userData.username}`, JSON.stringify(userData));
+    return Promise.resolve({
+      data: {
+        access_token: `jwt-token-${userData.username}`,
+        username: userData.username,
+        full_name: userData.full_name || userData.username,
+        role: "analyst",
+      },
+    });
+  },
 };
+
 

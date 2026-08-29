@@ -63,7 +63,13 @@ export const login = withFallback(
   (username, password) => mockApi.login(username, password)
 );
 
+export const signup = withFallback(
+  (userData) => api.post('/auth/signup', userData),
+  (userData) => mockApi.signup(userData)
+);
+
 export const getMe = withFallback(
+
   () => api.get('/auth/me'),
   () => Promise.resolve({ data: { username: "2500040224", role: "admin", full_name: "Lead Security Architect (2500040224)" } })
 );

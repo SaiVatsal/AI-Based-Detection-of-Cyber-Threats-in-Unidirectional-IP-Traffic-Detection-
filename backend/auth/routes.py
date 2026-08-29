@@ -96,6 +96,50 @@ def login(
     )
 
 
+@router.post("/signup", response_model=TokenResponse, status_code=201)
+def signup(
+    payload: RegisterRequest,
+    db: Session = Depends(get_db),
+    request: Request = None,
+):
+    """
+    Public self-registration endpoint for security analysts and architects.
+    Creates user, hashes password, and immediately returns a JWT token.
+    """
+    if get_user_by_username(db, payload.username):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Username '{payload.username}' already registered",
+        )
+
+    user = create_user(
+        db=db,
+        username=payload.username,
+        email=payload.email,
+        hashed_password=hash_password(payload.password),
+        full_name=payload.full_name or payload.username,
+        role="analyst",
+    )
+
+    token = create_access_token(data={"sub": user.username, "role": user.role})
+
+    log_action(
+        db,
+        action="signup",
+        user_id=user.id,
+        ip_address=request.client.host if request and request.client else None,
+        details={"username": user.username},
+    )
+
+    return TokenResponse(
+        access_token=token,
+        username=user.username,
+        role=user.role,
+        full_name=user.full_name or "",
+    )
+
+
+
 @router.post("/register", response_model=UserResponse, status_code=201)
 def register(
     payload: RegisterRequest,
