@@ -307,32 +307,62 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
 
       {/* Real-time Rate & Target Telemetry KPI Grid */}
       {targetInfo && (
-        <div className="card" style={{ marginBottom: '24px' }}>
+        <div
+          className="card"
+          style={{
+            marginBottom: '24px',
+            borderLeft: `4px solid ${peakPps > 1000 ? 'var(--severity-critical)' : 'var(--severity-low)'}`,
+            boxShadow: peakPps > 1000 ? '0 0 24px rgba(255, 0, 85, 0.2)' : '0 0 20px rgba(0, 255, 136, 0.1)',
+          }}
+        >
           <div className="card-header">
-            <span className="card-title">Live Inbound Request Rate & Telemetry</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  background: peakPps > 1000 ? 'var(--severity-critical)' : 'var(--severity-low)',
+                  boxShadow: peakPps > 1000 ? '0 0 10px var(--severity-critical)' : '0 0 10px var(--severity-low)',
+                }}
+              />
+              <span className="card-title" style={{ color: peakPps > 1000 ? 'var(--severity-critical)' : 'var(--severity-low)' }}>
+                {peakPps > 1000 ? '🚨 HIGH-VELOCITY ANOMALY DETECTED' : '🟢 NORMAL TRAFFIC TELEMETRY (SAFE)'}
+              </span>
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span
                 style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: isInspecting ? 'var(--accent-cyan)' : 'var(--severity-low)',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  padding: '3px 8px',
+                  borderRadius: '4px',
+                  background: peakPps > 1000 ? 'rgba(255, 0, 85, 0.2)' : 'rgba(0, 255, 136, 0.15)',
+                  color: peakPps > 1000 ? 'var(--severity-critical)' : 'var(--severity-low)',
+                  border: `1px solid ${peakPps > 1000 ? 'var(--severity-critical)' : 'var(--severity-low)'}40`,
+                  fontFamily: 'var(--font-mono)',
                 }}
-              />
-              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
-                {isInspecting ? 'Capturing Flow Rates...' : 'Rate Analysis Locked'}
+              >
+                {peakPps > 1000 ? 'STATUS: CRITICAL THREAT' : 'STATUS: NOMINAL CLEAN'}
               </span>
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '16px', marginBottom: '16px' }}>
-            <div style={{ padding: '12px', background: 'var(--bg-card)', borderRadius: '8px', borderLeft: '3px solid var(--accent-cyan)' }}>
+            <div
+              style={{
+                padding: '12px',
+                background: 'var(--bg-card)',
+                borderRadius: '8px',
+                borderLeft: `3px solid ${peakPps > 1000 ? 'var(--severity-critical)' : 'var(--severity-low)'}`,
+              }}
+            >
               <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Incoming Request Rate</div>
-              <div style={{ fontSize: '22px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: peakPps > 1000 ? 'var(--severity-critical)' : 'var(--accent-cyan)' }}>
+              <div style={{ fontSize: '22px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: peakPps > 1000 ? 'var(--severity-critical)' : 'var(--severity-low)' }}>
                 {peakPps > 0 ? `${peakPps.toLocaleString()} req/s` : 'Calculating...'}
               </div>
-              <div style={{ fontSize: '10px', color: peakPps > 1000 ? 'var(--severity-critical)' : 'var(--severity-low)', marginTop: '2px', fontWeight: 600 }}>
-                {peakPps > 1000 ? '🚨 HIGH-VELOCITY SPIKE DETECTED' : '✓ Normal Rate'}
+              <div style={{ fontSize: '10px', color: peakPps > 1000 ? 'var(--severity-critical)' : 'var(--severity-low)', marginTop: '2px', fontWeight: 700 }}>
+                {peakPps > 1000 ? '🚨 DANGER: 2,000+ REQ/S FLOOD' : '✓ 100% NORMAL SAFE RATE'}
               </div>
             </div>
 
@@ -447,9 +477,18 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
           )}
 
           {/* Source IP Origin Detection & Automated Mitigation Playbook */}
-          <div className="card" style={{ marginTop: '24px', borderLeft: '4px solid var(--accent-cyan)' }}>
+          <div
+            className="card"
+            style={{
+              marginTop: '24px',
+              borderLeft: `4px solid ${peakPps > 1000 ? 'var(--severity-critical)' : 'var(--severity-low)'}`,
+              boxShadow: peakPps > 1000 ? '0 0 20px rgba(255, 0, 85, 0.15)' : 'none',
+            }}
+          >
             <div className="card-header">
-              <span className="card-title">🛡️ Automated Threat Prevention & Mitigation Playbook</span>
+              <span className="card-title" style={{ color: peakPps > 1000 ? 'var(--severity-critical)' : 'var(--severity-low)' }}>
+                {peakPps > 1000 ? '🚨 Automated Threat Mitigation & Drop Playbook' : '🟢 Verified Safe — Nominal Baseline Operating State'}
+              </span>
               <span className={`severity-badge ${threatSeverity.toLowerCase()}`}>
                 <span className="severity-dot" /> Action Plan: {threatSeverity}
               </span>
