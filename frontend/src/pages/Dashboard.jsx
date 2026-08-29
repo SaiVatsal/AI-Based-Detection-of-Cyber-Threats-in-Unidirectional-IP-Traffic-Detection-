@@ -31,6 +31,7 @@ export default function Dashboard({ wsAlerts = [], wsProgress }) {
   const [categoryData, setCategoryData] = useState({});
   const [loading, setLoading] = useState(true);
   const [showMathModal, setShowMathModal] = useState(false);
+  const [showFeaturesModal, setShowFeaturesModal] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -101,14 +102,24 @@ export default function Dashboard({ wsAlerts = [], wsProgress }) {
           <h1>SOC Threat Intelligence Dashboard</h1>
           <p>Real-Time Unidirectional Passive Flow Telemetry & Anomaly Analytics · SIH26145</p>
         </div>
-        <button
-          className="btn btn-secondary"
-          onClick={() => setShowMathModal(true)}
-          style={{ border: '1px solid var(--border-cyan)', color: 'var(--accent-cyan)' }}
-        >
-          <Binary size={15} />
-          <span>View AI Formulas & Mathematical Proofs</span>
-        </button>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowFeaturesModal(true)}
+            style={{ border: '1px solid var(--border-cyan)', color: 'var(--accent-cyan)' }}
+          >
+            <Binary size={15} />
+            <span>🔬 20 Unidirectional ML Features Matrix</span>
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowMathModal(true)}
+            style={{ border: '1px solid var(--border-cyan)', color: 'var(--accent-cyan)' }}
+          >
+            <Binary size={15} />
+            <span>📐 AI Formulas & Math Proofs</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Grid */}
@@ -315,6 +326,100 @@ PPS = N_packets / (∑ Δt_i)
           </div>
         </div>
       )}
+
+      {/* 20 Unidirectional ML Features Matrix Modal */}
+      {showFeaturesModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(3, 7, 18, 0.85)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1200,
+            padding: '20px',
+          }}
+        >
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-cyan)',
+              borderRadius: '16px',
+              maxWidth: '850px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '28px',
+              boxShadow: '0 0 50px rgba(0, 240, 255, 0.2)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Binary size={22} color="var(--accent-cyan)" />
+                <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  The 20 Unidirectional ML Feature Set (SIH26145)
+                </span>
+              </div>
+              <button
+                onClick={() => setShowFeaturesModal(false)}
+                className="btn btn-secondary btn-sm"
+                style={{ padding: '6px 12px' }}
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', fontFamily: 'var(--font-mono)' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-default)', background: 'var(--bg-surface)', textAlign: 'left' }}>
+                    <th style={{ padding: '10px' }}>#</th>
+                    <th style={{ padding: '10px' }}>Feature Name</th>
+                    <th style={{ padding: '10px' }}>Category</th>
+                    <th style={{ padding: '10px' }}>Mathematical Purpose</th>
+                    <th style={{ padding: '10px' }}>One-Way Safety Proof</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { id: 1, name: 'packet_count', cat: 'Volume', desc: 'Total observed packets in 1.0s window', proof: 'Observed incoming packets only' },
+                    { id: 2, name: 'total_bytes', cat: 'Volume', desc: 'Total byte volume transferred in window', proof: 'Sum of packet lengths' },
+                    { id: 3, name: 'bytes_per_second', cat: 'Rate', desc: 'Byte throughput velocity (BPS)', proof: 'One-way data rate' },
+                    { id: 4, name: 'packets_per_second', cat: 'Rate', desc: 'Packet rate velocity (PPS)', proof: 'Detected 2,000+ req/s floods' },
+                    { id: 5, name: 'min_packet_size', cat: 'Size', desc: 'Minimum frame length', proof: 'Frame header size' },
+                    { id: 6, name: 'max_packet_size', cat: 'Size', desc: 'Maximum frame length (MTU)', proof: 'Detects jumbo frame exfiltration' },
+                    { id: 7, name: 'mean_packet_size', cat: 'Size', desc: 'Average packet length (μ)', proof: 'Identifies small probe sweeps' },
+                    { id: 8, name: 'std_packet_size', cat: 'Size', desc: 'Standard deviation of sizes (σ)', proof: 'Measures frame uniformity' },
+                    { id: 9, name: 'packet_size_skewness', cat: 'Size', desc: 'Third statistical moment of distribution', proof: 'Asymmetry of packet sizes' },
+                    { id: 10, name: 'min_iat', cat: 'Timing', desc: 'Minimum inter-arrival time (Δt_min)', proof: 'Packet arrival timestamps' },
+                    { id: 11, name: 'max_iat', cat: 'Timing', desc: 'Maximum inter-arrival time (Δt_max)', proof: 'Flow pauses & gaps' },
+                    { id: 12, name: 'mean_iat', cat: 'Timing', desc: 'Average inter-arrival interval (Δt_mean)', proof: 'Heartbeat & beacon period' },
+                    { id: 13, name: 'std_iat', cat: 'Timing', desc: 'Jitter / variance of arrivals (σ_IAT)', proof: 'Flags periodic Botnet C2 (low σ)' },
+                    { id: 14, name: 'burst_count', cat: 'Timing', desc: 'Rapid packet bursts (Δt < 1ms)', proof: 'Identifies micro-burst attacks' },
+                    { id: 15, name: 'unique_dst_ports', cat: 'Port', desc: 'Count of distinct destination ports', proof: 'Detects horizontal/vertical scans' },
+                    { id: 16, name: 'dst_port_entropy', cat: 'Port', desc: 'Shannon entropy across ports', proof: 'Flags port sweeping entropy' },
+                    { id: 17, name: 'protocol_entropy', cat: 'Protocol', desc: 'Shannon entropy across IP protocols', proof: 'Detects exotic protocol flooding' },
+                    { id: 18, name: 'tcp_ratio', cat: 'Protocol', desc: 'Fraction of TCP frames', proof: 'TCP volume dominance' },
+                    { id: 19, name: 'udp_ratio', cat: 'Protocol', desc: 'Fraction of UDP frames', proof: 'UDP amplification & DNS tunnels' },
+                    { id: 20, name: 'payload_entropy', cat: 'Payload', desc: 'Shannon byte entropy H(X)', proof: 'Detects encrypted exfiltration (H > 7.2)' },
+                  ].map((f) => (
+                    <tr key={f.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <td style={{ padding: '8px 10px', color: 'var(--accent-cyan)' }}>{f.id}</td>
+                      <td style={{ padding: '8px 10px', color: 'var(--text-primary)', fontWeight: 700 }}>{f.name}</td>
+                      <td style={{ padding: '8px 10px' }}><span style={{ padding: '2px 6px', borderRadius: 4, background: 'rgba(0,240,255,0.1)', color: 'var(--accent-cyan)' }}>{f.cat}</span></td>
+                      <td style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>{f.desc}</td>
+                      <td style={{ padding: '8px 10px', color: 'var(--severity-low)' }}>✓ {f.proof}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

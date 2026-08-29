@@ -122,16 +122,21 @@ export default function App() {
     return stored ? JSON.parse(stored) : { username: '2500040224', role: 'admin', full_name: 'Lead Security Architect' };
   });
 
-  const isAuthenticated = !!localStorage.getItem('campusshield_token');
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return true; // Always allow immediate exploration in Hackathon demo mode
+  });
 
   const handleLogin = (userData) => {
     setUser(userData);
+    setIsAuthenticated(true);
+    localStorage.setItem('campusshield_token', 'demo-jwt-token-sih26145');
+    localStorage.setItem('campusshield_user', JSON.stringify(userData));
   };
 
   const handleLogout = () => {
     localStorage.removeItem('campusshield_token');
     localStorage.removeItem('campusshield_user');
-    setUser(null);
+    setUser({ username: '2500040224', role: 'admin', full_name: 'Lead Security Architect' });
   };
 
   return (
@@ -139,23 +144,11 @@ export default function App() {
       <Routes>
         <Route
           path="/login"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/" replace />
-            ) : (
-              <Login onLogin={handleLogin} />
-            )
-          }
+          element={<Login onLogin={handleLogin} />}
         />
         <Route
           path="/*"
-          element={
-            isAuthenticated ? (
-              <ProtectedLayout user={user} onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={<ProtectedLayout user={user} onLogout={handleLogout} />}
         />
       </Routes>
     </BrowserRouter>
