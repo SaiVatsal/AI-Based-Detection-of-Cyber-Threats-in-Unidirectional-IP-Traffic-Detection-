@@ -228,11 +228,13 @@ export const mockApi = {
   acknowledgeAlert: () => Promise.resolve({ data: { message: "Acknowledged" } }),
   getScenarios: () => Promise.resolve({
     data: {
-      normal: { name: "Normal Campus Traffic", description: "Steady HTTP/HTTPS traffic", expected_result: "No anomalies detected" },
-      ddos: { name: "DDoS Volumetric Flood", description: "High-rate SYN flood", expected_result: "Volumetric Anomaly alerts" },
-      scan: { name: "Port Scan Sweep", description: "Sequential TCP SYN probes", expected_result: "Scan-like Behavior alerts" },
-      protocol_anomaly: { name: "Protocol Anomaly", description: "Unusual protocol mix", expected_result: "Protocol Anomaly alerts" },
-      exfiltration: { name: "Data Exfiltration", description: "Encrypted transfer to external host", expected_result: "Exfiltration Pattern alerts" },
+      normal: { name: "1. Nominal Campus Traffic", description: "Steady HTTP/HTTPS baseline traffic", expected_result: "No anomalies detected (Clean)" },
+      ddos: { name: "2. Volumetric / Protocol DDoS (SIH-a)", description: "2,000+ req/s SYN flood & UDP amplification", expected_result: "Volumetric Anomaly (CRITICAL)" },
+      botnet_c2: { name: "3. Botnet C2 Beaconing (SIH-b)", description: "Periodic fixed-interval C2 heartbeats", expected_result: "Botnet C2 Beaconing alerts" },
+      dns_tunneling: { name: "4. DGA & DNS Tunnelling (SIH-c)", description: "High-entropy DNS query tunneling", expected_result: "DGA / DNS Tunnelling alerts" },
+      encrypted_malware: { name: "5. Encrypted Malware (SIH-d)", description: "TLS/QUIC metadata anomaly without decryption", expected_result: "Encrypted Session Anomaly" },
+      scan: { name: "6. Reconnaissance & Port Scan (SIH-e)", description: "Fan-out probes across ports/hosts", expected_result: "Scan-like Behavior alerts" },
+      exfiltration: { name: "7. Data Exfiltration (SIH-f)", description: "Asymmetric high-entropy MTU egress flow", expected_result: "Data Exfiltration alerts" },
     }
   }),
   simulateTraffic: (scenario) => {

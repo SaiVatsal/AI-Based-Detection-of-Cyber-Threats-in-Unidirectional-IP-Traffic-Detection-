@@ -93,7 +93,10 @@ SIMULATION_SCENARIOS = [
     "scan",
     "protocol_anomaly",
     "exfiltration",
+    "botnet_c2",
+    "dns_tunneling",
 ]
+
 
 # ---------------------------------------------------------------------------
 # WebSocket
