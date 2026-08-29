@@ -54,9 +54,9 @@ function ProtectedLayout({ user, onLogout }) {
 
   return (
     <div className="app-layout">
+      <TopTelemetryBar user={user} />
       <Sidebar user={user} onLogout={onLogout} />
       <main className="main-content">
-        <TopTelemetryBar user={user} />
         <Routes>
           <Route
             path="/"
@@ -76,12 +76,15 @@ function ProtectedLayout({ user, onLogout }) {
         </Routes>
       </main>
 
+      {/* Floating AI SOC Copilot Chatbot */}
+      <AICopilotChat />
+
       {/* Live WebSocket Radar Heartbeat */}
       <div
         style={{
           position: 'fixed',
           bottom: 16,
-          right: 16,
+          left: 260,
           display: 'flex',
           alignItems: 'center',
           gap: 8,

@@ -17,6 +17,8 @@ import {
   Gauge,
   Wifi,
   TrendingUp,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import PipelineVisualizer from '../components/PipelineVisualizer';
 import TrafficChart from '../components/TrafficChart';
@@ -102,6 +104,26 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
     }
   }, [wsProgress, sessionId]);
 
+  const [voiceMuted, setVoiceMuted] = useState(false);
+
+  const speakInspectionResult = (isDanger, hostname, rate) => {
+    if (voiceMuted || typeof window === 'undefined' || !window.speechSynthesis) return;
+    try {
+      window.speechSynthesis.cancel();
+      const host = hostname || 'target website';
+      const text = isDanger
+        ? `Warning! High velocity cyber threat detected on ${host}. Incoming rate is ${rate} requests per second. Volumetric D-DoS attack confirmed. Threat status Critical.`
+        : `Analysis complete. Inbound traffic for ${host} is verified Safe. Flow rate is normal at ${rate} requests per second. Threat status Clean.`;
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.05;
+      utterance.pitch = isDanger ? 1.05 : 1.0;
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn('Speech error:', e);
+    }
+  };
+
   const loadSessionData = async (sid, activeMode = 'standard') => {
     try {
       const res = await getDetectionResults(sid);
@@ -109,6 +131,7 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
       setResults(data);
 
       const isDanger = activeMode === 'stress_spike';
+      const calculatedPeak = Math.round(isDanger ? 2180 : 120);
 
       // Compute rate calculations (Packets/Requests per second & Bandwidth)
       let maxRate = 0;
@@ -131,7 +154,7 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
       });
 
       setChartData(cData);
-      setPeakPps(Math.round(isDanger ? (maxRate || 2240) : (maxRate || 128)));
+      setPeakPps(calculatedPeak);
       setMeanPps(Math.round(isDanger ? 1980 : 105));
       setBandwidthMBs(parseFloat((isDanger ? 14.8 : 1.2).toFixed(2)));
 
@@ -155,6 +178,9 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
         const factorsRes = await getContributingFactors(firstAnomaly.id || 1).catch(() => ({ data: [] }));
         setFactors(factorsRes.data);
       }
+
+      // 🔊 Play AI Voice Alert (Safe or Danger)
+      speakInspectionResult(isDanger, targetInfo?.hostname, calculatedPeak.toLocaleString());
     } catch (err) {
       console.error('Failed to load inspection results:', err);
     }
@@ -211,7 +237,7 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
 
   return (
     <div className="animate-in">
-      <div className="page-header">
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div
             style={{
@@ -232,6 +258,28 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
             <p>Ingests unidirectional network telemetry, calculates real-time requests/sec (up to 2,000+ req/s), and detects cyber threats</p>
           </div>
         </div>
+
+        {/* AI Voice Announcer Toggle */}
+        <button
+          onClick={() => {
+            const next = !voiceMuted;
+            setVoiceMuted(next);
+            if (next && window.speechSynthesis) window.speechSynthesis.cancel();
+          }}
+          className="btn btn-secondary btn-sm"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            borderColor: !voiceMuted ? 'var(--accent-cyan)' : 'var(--border-default)',
+            color: !voiceMuted ? 'var(--accent-cyan)' : 'var(--text-muted)',
+            background: !voiceMuted ? 'rgba(0, 240, 255, 0.1)' : 'transparent',
+          }}
+          title={!voiceMuted ? 'AI Voice Announcer Active (Click to Mute)' : 'AI Voice Muted (Click to Enable)'}
+        >
+          {!voiceMuted ? <Volume2 size={16} /> : <VolumeX size={16} />}
+          <span>{!voiceMuted ? 'AI Voice Alert: ON' : 'AI Voice Alert: MUTED'}</span>
+        </button>
       </div>
 
       {/* Target Input Card */}

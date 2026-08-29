@@ -20,8 +20,10 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
-import pandas as pd
-import joblib
+try:
+    import joblib
+except ImportError:
+    import pickle as joblib
 from sklearn.ensemble import IsolationForest
 
 from backend.config import (
