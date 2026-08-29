@@ -213,11 +213,12 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
     }
   };
 
-  const [inspectCount, setInspectCount] = useState(0);
+  const [inspectMode, setInspectMode] = useState('standard'); // 'standard' (Safe) or 'stress_spike' (Danger)
 
-  const handleInspect = async (e) => {
-    if (e) e.preventDefault();
+  const handleInspect = async (modeOverride) => {
     if (!targetUrl.trim() || isInspecting) return;
+
+    const chosenMode = modeOverride || inspectMode;
 
     setIsInspecting(true);
     setResults(null);
@@ -225,17 +226,12 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
     setChartData([]);
     setTimelineData([]);
     setCategoryData({});
-
-    // Request 1, 3, 5 = 'standard' (SAFE)
-    // Request 2, 4, 6 = 'stress_spike' (DANGER)
-    const currentMode = inspectCount % 2 === 0 ? 'standard' : 'stress_spike';
-    setProfile(currentMode);
-    setInspectCount((prev) => prev + 1);
+    setProfile(chosenMode);
 
     try {
       const res = await inspectUrl({
         url: targetUrl.trim(),
-        traffic_profile: currentMode,
+        traffic_profile: chosenMode,
         packet_count: packetCount,
       });
 
@@ -245,8 +241,8 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
       // Fallback timer for demo mode or rapid completion
       setTimeout(() => {
         setIsInspecting(false);
-        loadSessionData(res.data.session_id, currentMode);
-      }, 1100);
+        loadSessionData(res.data.session_id, chosenMode);
+      }, 1000);
     } catch (err) {
       console.error('URL inspection failed:', err);
       setIsInspecting(false);
@@ -318,9 +314,9 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
           </span>
         </div>
 
-        <form onSubmit={handleInspect}>
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-            <div style={{ flex: 1, position: 'relative' }}>
+        <form onSubmit={(e) => { e.preventDefault(); handleInspect(inspectMode); }}>
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: '280px', position: 'relative' }}>
               <input
                 type="text"
                 className="input"
@@ -335,24 +331,52 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
                 style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }}
               />
             </div>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isInspecting || !targetUrl.trim()}
-              style={{ minWidth: '200px' }}
-            >
-              {isInspecting ? (
-                <>
-                  <Loader2 size={16} className="loading-pulse" />
-                  Capturing Live Telemetry...
-                </>
-              ) : (
-                <>
-                  <Zap size={16} />
-                  Inspect & Detect Rate
-                </>
-              )}
-            </button>
+
+            {/* Direct Execution Buttons: Nominal (Safe) vs DDoS (Danger) */}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={isInspecting || !targetUrl.trim()}
+                onClick={() => {
+                  setInspectMode('standard');
+                  handleInspect('standard');
+                }}
+                style={{
+                  background: 'rgba(0, 255, 136, 0.1)',
+                  borderColor: 'var(--severity-low)',
+                  color: 'var(--severity-low)',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <ShieldCheck size={16} />
+                <span>🟢 Inspect Nominal Traffic (Safe)</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={isInspecting || !targetUrl.trim()}
+                onClick={() => {
+                  setInspectMode('stress_spike');
+                  handleInspect('stress_spike');
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #ff0055, #991b1b)',
+                  boxShadow: '0 0 20px rgba(255, 0, 85, 0.4)',
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <Zap size={16} />
+                <span>🚨 Detect 2,000+ Req/s DDoS (Danger)</span>
+              </button>
+            </div>
           </div>
 
           {/* Quick Presets */}
