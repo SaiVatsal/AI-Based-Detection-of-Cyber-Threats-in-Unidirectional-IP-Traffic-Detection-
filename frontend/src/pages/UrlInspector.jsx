@@ -531,8 +531,32 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', marginBottom: '16px' }}>
               <div style={{ padding: '14px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-default)' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-cyan)', marginBottom: '6px' }}>
-                  Recommended Ingress Firewall Drop Rule (Linux IPTables)
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-cyan)' }}>
+                    Recommended Ingress Firewall Drop Rule (Linux IPTables)
+                  </div>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      const scriptContent = `#!/bin/bash\n# CampusShield AI Automated Mitigation Script (SIH26145)\n# Target: ${targetInfo?.resolved_ip}:${targetInfo?.port}\n# Severity: ${threatSeverity}\n\necho "[+] Applying CampusShield AI Ingress Firewall Rules..."\n` +
+                        (profile === 'stress_spike'
+                          ? `iptables -A INPUT -p tcp --dport ${targetInfo?.port || 80} -m limit --limit 150/s --limit-burst 300 -j ACCEPT\niptables -A INPUT -s 198.51.100.0/24 -j DROP\n`
+                          : profile === 'sweep_probe'
+                          ? `iptables -I INPUT -s 192.168.1.105 -j DROP\niptables -A INPUT -m recent --name portscan --rcheck --seconds 86400 -j DROP\n`
+                          : `iptables -A INPUT -p tcp --dport ${targetInfo?.port || 80} -j ACCEPT\n`) +
+                        `echo "[✓] Mitigation active. Offending traffic blocked."\n`;
+                      const blob = new Blob([scriptContent], { type: 'text/x-sh' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'mitigate_threat.sh';
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    style={{ fontSize: '10px', padding: '3px 8px' }}
+                  >
+                    📥 Export .sh Script
+                  </button>
                 </div>
                 <pre style={{ margin: 0, padding: '10px', background: 'var(--bg-input)', borderRadius: '6px', fontSize: '11px', fontFamily: 'var(--font-mono)', overflowX: 'auto', color: 'var(--text-primary)' }}>
 {profile === 'stress_spike'
@@ -544,8 +568,33 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
               </div>
 
               <div style={{ padding: '14px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-default)' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-purple)', marginBottom: '6px' }}>
-                  Web Application Firewall (Nginx WAF Zone Limiting)
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-purple)' }}>
+                    Web Application Firewall (Nginx WAF Zone Limiting)
+                  </div>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      const policy = {
+                        system: "CampusShield AI (SIH26145)",
+                        timestamp: new Date().toISOString(),
+                        target: `${targetInfo?.resolved_ip}:${targetInfo?.port}`,
+                        severity: threatSeverity,
+                        waf_rate_limit: profile === 'stress_spike' ? "50r/s" : "150r/s",
+                        blocked_subnets: profile === 'stress_spike' ? ["198.51.100.0/24"] : profile === 'sweep_probe' ? ["192.168.1.105"] : [],
+                      };
+                      const blob = new Blob([JSON.stringify(policy, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'waf_policy.json';
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    style={{ fontSize: '10px', padding: '3px 8px' }}
+                  >
+                    📥 Export JSON Rule
+                  </button>
                 </div>
                 <pre style={{ margin: 0, padding: '10px', background: 'var(--bg-input)', borderRadius: '6px', fontSize: '11px', fontFamily: 'var(--font-mono)', overflowX: 'auto', color: 'var(--text-primary)' }}>
 {profile === 'stress_spike'
