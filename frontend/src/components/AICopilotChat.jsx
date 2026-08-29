@@ -66,15 +66,40 @@ export default function AICopilotChat() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
+  const getFemaleVoice = () => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return null;
+    const voices = window.speechSynthesis.getVoices();
+    return (
+      voices.find((v) => v.name.includes('Natural') || v.name.includes('Neural')) ||
+      voices.find(
+        (v) =>
+          v.lang.startsWith('en') &&
+          (/jenny|aria|samantha|karen|serena|victoria|ava|google us english/i.test(v.name))
+      ) ||
+      voices.find((v) => v.lang.startsWith('en') && !/david|mark|george|male/i.test(v.name)) ||
+      voices[0]
+    );
+  };
+
   const speak = (text) => {
     if (!voiceEnabled || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    // Clean text of markdown for speech
-    const cleanText = text.replace(/[*#`$\\]/g, '').slice(0, 200);
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.rate = 1.05;
-    utterance.pitch = 1.0;
-    window.speechSynthesis.speak(utterance);
+    try {
+      window.speechSynthesis.cancel();
+      // Clean text of markdown, code blocks, and formulas for smooth human speech
+      const cleanText = text
+        .replace(/```[\s\S]*?```/g, 'I have generated the configuration code in the chat.')
+        .replace(/[*#`$\\]/g, '')
+        .slice(0, 240);
+
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      const voice = getFemaleVoice();
+      if (voice) utterance.voice = voice;
+      utterance.pitch = 1.04;
+      utterance.rate = 1.02;
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn('Speech error:', e);
+    }
   };
 
   const handleSend = (textToSend) => {

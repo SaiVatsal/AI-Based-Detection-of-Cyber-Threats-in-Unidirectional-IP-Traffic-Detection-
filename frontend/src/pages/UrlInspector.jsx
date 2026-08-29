@@ -110,15 +110,41 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
   const [voiceMuted, setVoiceMuted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
+  const playGeminiChime = (isDanger) => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      if (isDanger) {
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+      } else {
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.12);
+        osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.25);
+      }
+      gain.gain.setValueAtTime(0.06, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } catch (e) {}
+  };
+
   const getFemaleVoice = () => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return null;
     const voices = window.speechSynthesis.getVoices();
+    // Prioritize natural neural conversational voices (like Gemini Live & GPT-4o voices)
     return (
+      voices.find((v) => v.name.includes('Natural') || v.name.includes('Neural')) ||
       voices.find(
         (v) =>
           v.lang.startsWith('en') &&
-          (/female|zira|samantha|karen|jenny|victoria|serena|ava|aria|stephanie|helena/i.test(v.name) ||
-            v.name.includes('Google US English'))
+          (/jenny|aria|samantha|karen|serena|victoria|ava|google us english/i.test(v.name))
       ) ||
       voices.find((v) => v.lang.startsWith('en') && !/david|mark|george|male/i.test(v.name)) ||
       voices[0]
@@ -128,17 +154,20 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
   const speakInspectionResult = (isDanger, hostname, rate) => {
     if (voiceMuted || typeof window === 'undefined' || !window.speechSynthesis) return;
     try {
+      playGeminiChime(isDanger);
       window.speechSynthesis.cancel();
       const host = hostname || 'target website';
+      
+      // Gemini Live / GPT-4o Style Humanized Conversational Script
       const text = isDanger
-        ? `Attention Operator! Critical cyber threat detected on ${host}. Incoming velocity has surged to ${rate} requests per second. Volumetric D-DoS flood attack confirmed. Statistical deviation is 18.4 sigma. Automated firewall mitigation rules are ready for deployment.`
-        : `Threat assessment complete. Inbound traffic for ${host} is verified Safe and Nominal. Current velocity is steady at ${rate} requests per second with zero anomalies detected across all unidirectional features.`;
+        ? `Heads up! We've detected an aggressive volumetric D-DoS surge targeting ${host}. Inbound rate just spiked to over ${rate} requests per second, which is an eighteen sigma deviation from normal. I've automatically prepared the Linux firewall drop rules below so you can mitigate it right away.`
+        : `Hi there! I just analyzed the incoming traffic stream for ${host}. Everything looks completely healthy and steady at around ${rate} requests per second. The timing jitter and byte entropy match our normal baseline, so you're all clear!`;
 
       const utterance = new SpeechSynthesisUtterance(text);
       const voice = getFemaleVoice();
       if (voice) utterance.voice = voice;
-      utterance.pitch = 1.18; // Crisp, pleasant female pitch
-      utterance.rate = 1.0;   // Natural cadence
+      utterance.pitch = 1.04; // Warm, natural humanized pitch (no robotic tone)
+      utterance.rate = 1.02;  // Fluid, conversational pace
 
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => setIsSpeaking(false);
