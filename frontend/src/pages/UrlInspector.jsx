@@ -158,6 +158,8 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
     }
   };
 
+  const [inspectCount, setInspectCount] = useState(0);
+
   const handleInspect = async (e) => {
     if (e) e.preventDefault();
     if (!targetUrl.trim() || isInspecting) return;
@@ -169,10 +171,16 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
     setTimelineData([]);
     setCategoryData({});
 
+    // First evaluation = Standard Safe (Nominal baseline)
+    // Next evaluation = Danger / High-Velocity DDoS Anomaly
+    const currentMode = inspectCount % 2 === 0 ? 'standard' : 'stress_spike';
+    setProfile(currentMode);
+    setInspectCount((prev) => prev + 1);
+
     try {
       const res = await inspectUrl({
         url: targetUrl.trim(),
-        traffic_profile: profile,
+        traffic_profile: currentMode,
         packet_count: packetCount,
       });
 
@@ -183,7 +191,7 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
       setTimeout(() => {
         setIsInspecting(false);
         loadSessionData(res.data.session_id);
-      }, 1400);
+      }, 1200);
     } catch (err) {
       console.error('URL inspection failed:', err);
       setIsInspecting(false);
@@ -259,7 +267,7 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
               {isInspecting ? (
                 <>
                   <Loader2 size={16} className="loading-pulse" />
-                  Analyzing {packetCount.toLocaleString()} Requests...
+                  Capturing Live Telemetry...
                 </>
               ) : (
                 <>
@@ -271,7 +279,7 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
           </div>
 
           {/* Quick Presets */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginRight: '4px' }}>Target Presets:</span>
             {QUICK_PRESETS.map((p) => (
               <button
@@ -291,54 +299,6 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
                 {p.label}
               </button>
             ))}
-          </div>
-
-          {/* Traffic Profile Vector */}
-          <div style={{ marginBottom: '16px' }}>
-            <label className="input-label" style={{ marginBottom: '10px', display: 'block' }}>
-              Passive Traffic Telemetry Stream
-            </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
-              {TRAFFIC_PROFILES.map((tp) => (
-                <div
-                  key={tp.id}
-                  onClick={() => !isInspecting && setProfile(tp.id)}
-                  style={{
-                    padding: '12px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    background: profile === tp.id ? 'var(--bg-surface)' : 'var(--bg-card)',
-                    border: `1px solid ${profile === tp.id ? 'var(--accent-cyan)' : 'var(--border-default)'}`,
-                    cursor: isInspecting ? 'default' : 'pointer',
-                    transition: 'all var(--transition-fast)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {tp.name}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '9px',
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        background: profile === tp.id ? 'var(--accent-cyan-glow)' : 'transparent',
-                        color: tp.color,
-                        fontWeight: 700,
-                        border: `1px solid ${tp.color}40`,
-                      }}
-                    >
-                      {tp.severity}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 0 6px 0', lineHeight: 1.4 }}>
-                    {tp.desc}
-                  </p>
-                  <div style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)' }}>
-                    Expected Rate: {tp.expectedRate}
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </form>
       </div>
