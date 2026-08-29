@@ -160,4 +160,25 @@ def generate_explanation(
             f"(weight: {score_result['weights']['category_boost']:.0%})"
         )
 
+    # Automated Mitigation Suggestions & Prevention
+    from backend.scoring.mitigation import generate_mitigation_plan
+    cat_id = category_result.get("category_id", "unclassified")
+    mitigation = generate_mitigation_plan(
+        category_id=cat_id,
+        threat_score=score_result.get("threat_score", 0),
+        features=features,
+    )
+
+    lines.append("\n🛡️ **Automated Incident Mitigation & Prevention Recommendations:**")
+    for act in mitigation.get("immediate_actions", []):
+        lines.append(f"  • {act}")
+
+    if mitigation.get("firewall_rule"):
+        lines.append("\n**Recommended Firewall Rule (IPTables):**")
+        lines.append(f"```bash\n{mitigation['firewall_rule']}\n```")
+
+    if mitigation.get("waf_policy"):
+        lines.append("\n**Recommended WAF / Rate-Limiting Policy:**")
+        lines.append(f"```nginx\n{mitigation['waf_policy']}\n```")
+
     return "\n".join(lines)

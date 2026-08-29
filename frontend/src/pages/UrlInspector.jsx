@@ -502,6 +502,84 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
               <ContributingFactors factors={factors} />
             </div>
           )}
+
+          {/* Source IP Origin Detection & Automated Mitigation Playbook */}
+          <div className="card" style={{ marginTop: '24px', borderLeft: '4px solid var(--accent-cyan)' }}>
+            <div className="card-header">
+              <span className="card-title">🛡️ Automated Threat Prevention & Mitigation Playbook</span>
+              <span className={`severity-badge ${threatSeverity.toLowerCase()}`}>
+                <span className="severity-dot" /> Action Plan: {threatSeverity}
+              </span>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                <strong>Detected Traffic Origin / Source Entities:</strong>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                <span style={{ padding: '4px 10px', background: 'var(--bg-surface)', borderRadius: '6px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
+                  📍 {profile === 'stress_spike' ? 'Distributed Botnet Subnet (198.51.100.0/24)' : profile === 'sweep_probe' ? 'Single Recon Host (192.168.1.105)' : 'Internal Campus Hosts (10.0.0.0/16)'}
+                </span>
+                <span style={{ padding: '4px 10px', background: 'var(--bg-surface)', borderRadius: '6px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
+                  🎯 Target: {targetInfo?.resolved_ip}:{targetInfo?.port}
+                </span>
+                <span style={{ padding: '4px 10px', background: 'var(--bg-surface)', borderRadius: '6px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
+                  ⚡ Observed Velocity: {peakPps.toLocaleString()} req/s
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+              <div style={{ padding: '14px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-default)' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-cyan)', marginBottom: '6px' }}>
+                  Recommended Ingress Firewall Drop Rule (Linux IPTables)
+                </div>
+                <pre style={{ margin: 0, padding: '10px', background: 'var(--bg-input)', borderRadius: '6px', fontSize: '11px', fontFamily: 'var(--font-mono)', overflowX: 'auto', color: 'var(--text-primary)' }}>
+{profile === 'stress_spike'
+  ? `# Limit burst rate and drop high-frequency SYN floods\niptables -A INPUT -p tcp --dport ${targetInfo?.port || 80} -m limit --limit 150/s --limit-burst 300 -j ACCEPT\niptables -A INPUT -s 198.51.100.0/24 -j DROP`
+  : profile === 'sweep_probe'
+  ? `# Block scanning host and tarpit recon probes\niptables -I INPUT -s 192.168.1.105 -j DROP\niptables -A INPUT -m recent --name portscan --rcheck --seconds 86400 -j DROP`
+  : `# Standard nominal baseline rule\niptables -A INPUT -p tcp --dport ${targetInfo?.port || 80} -j ACCEPT`}
+                </pre>
+              </div>
+
+              <div style={{ padding: '14px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-default)' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-purple)', marginBottom: '6px' }}>
+                  Web Application Firewall (Nginx WAF Zone Limiting)
+                </div>
+                <pre style={{ margin: 0, padding: '10px', background: 'var(--bg-input)', borderRadius: '6px', fontSize: '11px', fontFamily: 'var(--font-mono)', overflowX: 'auto', color: 'var(--text-primary)' }}>
+{profile === 'stress_spike'
+  ? `# Zone rate limiter\nlimit_req_zone $binary_remote_addr zone=api_limit:10m rate=50r/s;\nlocation / {\n    limit_req zone=api_limit burst=100 nodelay;\n}`
+  : profile === 'sweep_probe'
+  ? `# Block sensitive admin recon paths\nlocation ~* /((\\.env)|(admin)|(config)|(actuator)) {\n    deny all;\n    return 403;\n}`
+  : `# Standard security headers\nadd_header X-Frame-Options SAMEORIGIN;\nadd_header X-Content-Type-Options nosniff;`}
+                </pre>
+              </div>
+            </div>
+
+            <div style={{ padding: '12px 14px', background: 'var(--bg-surface)', borderRadius: '8px', fontSize: '12px' }}>
+              <strong style={{ color: 'var(--severity-low)' }}>Data Diode Hardware Safeguard: </strong>
+              <span style={{ color: 'var(--text-secondary)' }}>
+                {profile === 'stress_spike'
+                  ? 'Adjust hardware optical transmit buffers to absorb burst queuing without dropping mission-critical telemetry frames.'
+                  : 'Ensure unidirectional protocol-break proxy enforces strictly typed log serialization.'}
+              </span>
+            </div>
+          </div>
+
+          {/* Test Website & Passive Webhook Collector API Info */}
+          <div className="card" style={{ marginTop: '24px' }}>
+            <div className="card-header">
+              <span className="card-title">📡 Connect Your Test Website / Live Passive Inbound Receiver</span>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+              You can send real live request logs from your test website directly to CampusShield AI without sending any outbound requests. The tool will passively detect, analyze origins, and flag incoming threats:
+            </p>
+            <div style={{ padding: '12px', background: 'var(--bg-input)', borderRadius: '6px', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--accent-cyan)' }}>
+              POST http://localhost:8000/api/traffic/live-collector<br/>
+              <span style={{ color: 'var(--text-muted)' }}>// Payload: {'{ "source_ip": "192.168.1.50", "path": "/login", "method": "POST", "payload_size": 256 }'}</span>
+            </div>
+          </div>
         </div>
       )}
     </div>

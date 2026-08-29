@@ -471,6 +471,58 @@ def inspect_url(
     }
 
 
+@router.post("/live-collector")
+def receive_inbound_traffic(
+    payload: dict,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Passive Inbound Traffic Collector.
+    Accepts real-time incoming traffic logs / requests sent from a test website,
+    without sending any outbound requests, and analyzes the telemetry.
+    """
+    from backend.ingestion.live_collector import record_live_inbound_event
+    client_ip = payload.get("source_ip", payload.get("client_ip", "192.168.1.100"))
+    method = payload.get("method", "GET")
+    path = payload.get("path", "/")
+    size = payload.get("size", payload.get("payload_size", 128))
+    headers = payload.get("headers", {})
+
+    event = record_live_inbound_event(
+        client_ip=client_ip,
+        method=method,
+        path=path,
+        payload_size=size,
+        headers=headers,
+    )
+
+    return {
+        "status": "recorded",
+        "event": event,
+        "mode": "passive_unidirectional_tap",
+    }
+
+
+@router.get("/mitigation/{category_id}")
+def get_threat_mitigation(
+    category_id: str,
+    threat_score: float = 85.0,
+    target_port: int = 80,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get automated prevention rules and firewall mitigation playbooks for a threat category.
+    """
+    from backend.scoring.mitigation import generate_mitigation_plan
+    plan = generate_mitigation_plan(
+        category_id=category_id,
+        threat_score=threat_score,
+        features={"packets_per_second": 2180 if category_id == "volumetric" else 150},
+        target_port=target_port,
+    )
+    return plan
+
+
 @router.get("/sessions", response_model=list[SessionResponse])
 def list_sessions(
     limit: int = 50,
