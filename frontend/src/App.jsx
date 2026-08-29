@@ -8,6 +8,7 @@ import ReplayDemo from './pages/ReplayDemo';
 import AlertsPage from './pages/AlertDetail';
 import Reports from './pages/Reports';
 import { useWebSocket } from './hooks/useWebSocket';
+import AICopilotChat from './components/AICopilotChat';
 
 function TopTelemetryBar({ user }) {
   const [timeStr, setTimeStr] = useState('');
