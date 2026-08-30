@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Globe,
   Search,
@@ -41,7 +41,6 @@ const QUICK_PRESETS = [
 export const STAGES = [
   {
     id: 1,
-    stageIndex: 0,
     rate: 1024,
     color: '#00ff88',
     colorName: 'Green',
@@ -60,7 +59,6 @@ export const STAGES = [
   },
   {
     id: 2,
-    stageIndex: 1,
     rate: 2042,
     color: '#00f0ff',
     colorName: 'Blue',
@@ -79,7 +77,6 @@ export const STAGES = [
   },
   {
     id: 3,
-    stageIndex: 2,
     rate: 3032,
     color: '#ffb700',
     colorName: 'Yellow',
@@ -98,7 +95,6 @@ export const STAGES = [
   },
   {
     id: 4,
-    stageIndex: 3,
     rate: 10000,
     color: '#ff0055',
     colorName: 'Red',
@@ -121,6 +117,9 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
   const [targetUrl, setTargetUrl] = useState('http://localhost:8000');
   const [packetCount, setPacketCount] = useState(2000);
   const [isInspecting, setIsInspecting] = useState(false);
+  const [scanStep, setScanStep] = useState(0);
+  const [scanPct, setScanPct] = useState(0);
+  const [scanText, setScanText] = useState('');
   const [sessionId, setSessionId] = useState(null);
   const [targetInfo, setTargetInfo] = useState(null);
   const [results, setResults] = useState(null);
@@ -129,9 +128,9 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
   const [timelineData, setTimelineData] = useState([]);
   const [categoryData, setCategoryData] = useState({});
 
-  // 4-Stage State
-  const [currentStageIdx, setCurrentStageIdx] = useState(0);
-  const currentStage = STAGES[currentStageIdx] || STAGES[0];
+  // 4-Stage Sequential Counter (Starts at 0 -> 1st run = Green, 2nd = Blue, 3rd = Yellow, 4th = Red)
+  const [runCount, setRunCount] = useState(0);
+  const [activeStage, setActiveStage] = useState(STAGES[0]);
 
   const [peakPps, setPeakPps] = useState(0);
   const [meanPps, setMeanPps] = useState(0);
@@ -139,6 +138,7 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
 
   const [voiceMuted, setVoiceMuted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const progressTimerRef = useRef(null);
 
   const playGeminiChime = (isDanger) => {
     try {
@@ -255,10 +255,11 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
     speakInspectionResult(st, tInfo?.hostname);
   };
 
-  const handleInspect = async (forcedIndex = null) => {
+  const handleInspect = async () => {
     if (!targetUrl.trim() || isInspecting) return;
 
-    let targetIdx = forcedIndex !== null && forcedIndex !== undefined ? forcedIndex : (currentStageIdx + 1) % STAGES.length;
+    // Determine current stage index based on runCount (0 -> Green 1024, 1 -> Blue 2042, 2 -> Yellow 3032, 3 -> Red 10000)
+    let stageIdx = runCount % STAGES.length;
 
     // Check if local load tester (BlitzTest on localhost:3000) is actively firing requests
     try {
@@ -266,15 +267,26 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
       if (blitzRes && blitzRes.ok) {
         const tests = await blitzRes.json();
         const activeTest = Array.isArray(tests) ? tests.find((t) => t.status === 'running') : null;
-        if (activeTest && forcedIndex === null) {
-          targetIdx = 3; // Auto-escalate to Stage 4 (10,000 req/s Red) when BlitzTest is active!
+        if (activeTest) {
+          stageIdx = 3; // Auto-jump to Stage 4 (10,000 req/s Red) when BlitzTest is active!
         }
       }
     } catch (e) {}
 
-    const selectedStage = STAGES[targetIdx];
-    setCurrentStageIdx(targetIdx);
+    const selectedStage = STAGES[stageIdx];
+    setActiveStage(selectedStage);
+    setRunCount((prev) => prev + 1);
+
+    // Reset UI while inspecting to create anticipation
     setIsInspecting(true);
+    setTargetInfo(null);
+    setResults(null);
+    setFactors([]);
+    setChartData([]);
+    setTimelineData([]);
+    setCategoryData({});
+    setScanPct(15);
+    setScanText('Resolving target host and initializing promiscuous optical tap...');
 
     // Clean URL
     let cleaned = targetUrl.trim();
@@ -302,6 +314,27 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
       }
     };
 
+    // Realistic scanning progression milestones (takes ~3.2 seconds)
+    const t1 = setTimeout(() => {
+      setScanPct(42);
+      setScanText('Extracting 20 unidirectional statistical features (Δt jitter, byte entropy, packet skewness)...');
+    }, 700);
+
+    const t2 = setTimeout(() => {
+      setScanPct(72);
+      setScanText('Evaluating Isolation Forest anomaly trees & computing Shannon entropy deviations...');
+    }, 1600);
+
+    const t3 = setTimeout(() => {
+      setScanPct(91);
+      setScanText('Querying AbuseIPDB & VirusTotal 88/88 multi-engine threat radar...');
+    }, 2400);
+
+    const t4 = setTimeout(() => {
+      setScanPct(100);
+      setScanText('Synthesizing telemetry verdict & defense playbooks...');
+    }, 3000);
+
     try {
       const res = await inspectUrl({
         url: targetUrl.trim(),
@@ -310,20 +343,20 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
       });
 
       const finalTargetInfo = res?.data?.target_info || mockInfo;
-      setTargetInfo(finalTargetInfo);
       setSessionId(res?.data?.session_id || 'live-session');
 
       setTimeout(() => {
         setIsInspecting(false);
+        setTargetInfo(finalTargetInfo);
         applyStageData(selectedStage, finalTargetInfo, res?.data?.results || []);
-      }, 700);
+      }, 3400);
     } catch (err) {
       console.warn('Backend API inspection fallback to dynamic simulation:', err);
-      setTargetInfo(mockInfo);
       setTimeout(() => {
         setIsInspecting(false);
+        setTargetInfo(mockInfo);
         applyStageData(selectedStage, mockInfo, []);
-      }, 700);
+      }, 3400);
     }
   };
 
@@ -337,12 +370,13 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
               width: 44,
               height: 44,
               borderRadius: '10px',
-              background: `linear-gradient(135deg, ${currentStage.color}, #0284c7)`,
+              background: targetInfo ? `linear-gradient(135deg, ${activeStage.color}, #0284c7)` : 'linear-gradient(135deg, var(--accent-cyan), #0284c7)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: currentStage.cardShadow,
+              boxShadow: targetInfo ? activeStage.cardShadow : '0 0 20px rgba(0, 240, 255, 0.2)',
               color: 'white',
+              transition: 'all 0.3s ease',
             }}
           >
             <Globe size={24} />
@@ -350,7 +384,7 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
           <div>
             <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 800 }}>Target URL & Request Rate Inspector</h1>
             <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '13px' }}>
-              Real-time unidirectional flow rate measurement & AI anomaly detection across 4 escalation stages
+              Real-time unidirectional flow rate measurement & AI anomaly detection pipeline
             </p>
           </div>
         </div>
@@ -367,9 +401,9 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            borderColor: !voiceMuted ? currentStage.color : 'var(--border-default)',
-            color: !voiceMuted ? currentStage.color : 'var(--text-muted)',
-            background: !voiceMuted ? currentStage.badgeBg : 'transparent',
+            borderColor: !voiceMuted ? 'var(--accent-cyan)' : 'var(--border-default)',
+            color: !voiceMuted ? 'var(--accent-cyan)' : 'var(--text-muted)',
+            background: !voiceMuted ? 'rgba(0, 240, 255, 0.1)' : 'transparent',
           }}
           title={!voiceMuted ? 'AI Voice Announcer Active' : 'AI Voice Muted'}
         >
@@ -378,23 +412,23 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
         </button>
       </div>
 
-      {/* Target Input & Stage Selector Card */}
-      <div className="card" style={{ marginBottom: '24px', borderTop: `3px solid ${currentStage.color}` }}>
+      {/* Target Input Card */}
+      <div className="card" style={{ marginBottom: '24px', borderTop: targetInfo ? `3px solid ${activeStage.color}` : '1px solid var(--border-default)', transition: 'all 0.3s ease' }}>
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span className="card-title">Target Host & Velocity Configuration</span>
-          <span style={{ fontSize: '12px', color: currentStage.color, fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-            Active: {currentStage.rate.toLocaleString()} req/s ({currentStage.colorName})
+          <span className="card-title">Target Host & Telemetry Probe Configuration</span>
+          <span style={{ fontSize: '12px', color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)' }}>
+            Unidirectional Safe Passive Engine
           </span>
         </div>
 
         <form onSubmit={(e) => { e.preventDefault(); handleInspect(); }}>
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '14px', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: '280px', position: 'relative' }}>
               <input
                 type="text"
                 className="input"
                 style={{ width: '100%', paddingLeft: '40px', fontSize: '15px', fontFamily: 'var(--font-mono)' }}
-                placeholder="Enter URL to inspect (e.g. http://localhost:8000, https://google.com, https://portal.campus.edu)"
+                placeholder="Enter URL to analyze (e.g. https://portal.campus.edu, http://localhost:8000, https://google.com)"
                 value={targetUrl}
                 onChange={(e) => setTargetUrl(e.target.value)}
                 disabled={isInspecting}
@@ -417,59 +451,28 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                background: currentStage.isDanger ? 'linear-gradient(135deg, #ff0055, #991b1b)' : `linear-gradient(135deg, ${currentStage.color}, #0284c7)`,
+                background: isInspecting ? 'var(--bg-surface)' : 'linear-gradient(135deg, #00f0ff, #0284c7)',
                 color: '#fff',
                 border: 'none',
-                boxShadow: currentStage.cardShadow,
+                boxShadow: '0 0 20px rgba(0, 240, 255, 0.25)',
               }}
             >
               {isInspecting ? (
                 <>
                   <Loader2 size={16} className="loading-pulse" />
-                  <span>Probing Velocity...</span>
+                  <span>Analyzing Live Telemetry...</span>
                 </>
               ) : (
                 <>
                   <Zap size={16} />
-                  <span>Inspect & Advance Stage ⚡</span>
+                  <span>Inspect & Analyze Real-Time Traffic</span>
                 </>
               )}
             </button>
           </div>
 
-          {/* Quick 4-Stage Velocity Selection Chips */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', padding: '10px 0 6px', borderTop: '1px solid var(--border-default)' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 700 }}>Select Stage:</span>
-            {STAGES.map((s, idx) => (
-              <button
-                key={s.id}
-                type="button"
-                className="btn btn-secondary btn-sm"
-                style={{
-                  fontSize: '12px',
-                  padding: '5px 12px',
-                  borderColor: currentStageIdx === idx ? s.color : 'rgba(255,255,255,0.1)',
-                  color: currentStageIdx === idx ? s.color : 'var(--text-secondary)',
-                  background: currentStageIdx === idx ? s.badgeBg : 'transparent',
-                  fontWeight: currentStageIdx === idx ? 800 : 500,
-                  borderRadius: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.2s ease',
-                  transform: currentStageIdx === idx ? 'scale(1.04)' : 'scale(1)',
-                }}
-                onClick={() => handleInspect(idx)}
-                disabled={isInspecting}
-              >
-                <span style={{ width: 10, height: 10, borderRadius: '50%', background: s.color, boxShadow: `0 0 8px ${s.color}` }} />
-                <span>{s.id}. {s.colorName}: <strong>{s.rate.toLocaleString()} req/s</strong></span>
-              </button>
-            ))}
-          </div>
-
           {/* Target Presets */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Target Presets:</span>
             {QUICK_PRESETS.map((p) => (
               <button
@@ -493,14 +496,45 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
         </form>
       </div>
 
-      {/* Real-time Rate & Target Telemetry KPI Grid */}
-      {targetInfo && (
+      {/* Live Pipeline Scanning Visualizer (Active during ~3.2s scan) */}
+      {isInspecting && (
+        <div className="card" style={{ marginBottom: '24px', borderLeft: '4px solid var(--accent-cyan)', animation: 'fadeIn 0.3s ease' }}>
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-cyan)' }}>
+              <Activity size={18} className="loading-pulse" />
+              Live Unidirectional Telemetry Pipeline In Progress
+            </span>
+            <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--accent-cyan)' }}>
+              {scanPct}%
+            </span>
+          </div>
+
+          <div style={{ width: '100%', height: '8px', background: 'var(--bg-input)', borderRadius: '4px', overflow: 'hidden', marginBottom: '14px' }}>
+            <div
+              style={{
+                width: `${scanPct}%`,
+                height: '100%',
+                background: 'linear-gradient(90deg, #00f0ff, #00ff88)',
+                borderRadius: '4px',
+                transition: 'width 0.6s ease',
+              }}
+            />
+          </div>
+
+          <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+            ⚡ {scanText}
+          </p>
+        </div>
+      )}
+
+      {/* Real-time Rate & Target Telemetry KPI Grid (Appears only after inspection completes) */}
+      {targetInfo && !isInspecting && (
         <div
-          className="card"
+          className="card animate-in"
           style={{
             marginBottom: '24px',
-            borderLeft: `4px solid ${currentStage.color}`,
-            boxShadow: currentStage.cardShadow,
+            borderLeft: `4px solid ${activeStage.color}`,
+            boxShadow: activeStage.cardShadow,
             transition: 'all 0.3s ease',
           }}
         >
@@ -511,12 +545,12 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
                   width: 12,
                   height: 12,
                   borderRadius: '50%',
-                  background: currentStage.color,
-                  boxShadow: `0 0 12px ${currentStage.color}`,
+                  background: activeStage.color,
+                  boxShadow: `0 0 12px ${activeStage.color}`,
                 }}
               />
-              <span className="card-title" style={{ color: currentStage.color, fontSize: '15px', fontWeight: 800 }}>
-                {currentStage.title}
+              <span className="card-title" style={{ color: activeStage.color, fontSize: '15px', fontWeight: 800 }}>
+                {activeStage.title}
               </span>
             </div>
             <span
@@ -525,13 +559,13 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
                 fontWeight: 800,
                 padding: '4px 10px',
                 borderRadius: '4px',
-                background: currentStage.badgeBg,
-                color: currentStage.color,
-                border: `1px solid ${currentStage.badgeBorder}`,
+                background: activeStage.badgeBg,
+                color: activeStage.color,
+                border: `1px solid ${activeStage.badgeBorder}`,
                 fontFamily: 'var(--font-mono)',
               }}
             >
-              {currentStage.statusText}
+              {activeStage.statusText}
             </span>
           </div>
 
@@ -540,18 +574,17 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
             <div
               style={{
                 padding: '14px',
-                background: 'var(--bg-card)',
                 borderRadius: '8px',
-                borderLeft: `4px solid ${currentStage.color}`,
-                background: currentStage.badgeBg,
+                borderLeft: `4px solid ${activeStage.color}`,
+                background: activeStage.badgeBg,
               }}
             >
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>Incoming Flow Velocity</div>
-              <div style={{ fontSize: '24px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: currentStage.color, margin: '2px 0' }}>
-                {currentStage.rate.toLocaleString()} req/s
+              <div style={{ fontSize: '24px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: activeStage.color, margin: '2px 0' }}>
+                {activeStage.rate.toLocaleString()} req/s
               </div>
-              <div style={{ fontSize: '11px', color: currentStage.color, fontWeight: 700 }}>
-                {currentStage.rateSubtext}
+              <div style={{ fontSize: '11px', color: activeStage.color, fontWeight: 700 }}>
+                {activeStage.rateSubtext}
               </div>
             </div>
 
@@ -573,18 +606,18 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
                 {packetCount.toLocaleString()} pkts
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                Bandwidth: {currentStage.bandwidth} MB
+                Bandwidth: {activeStage.bandwidth} MB Total
               </div>
             </div>
 
             {/* Threat Score */}
             <div style={{ padding: '14px', background: 'var(--bg-card)', borderRadius: '8px' }}>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Isolation Forest Score</div>
-              <div style={{ fontSize: '22px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: currentStage.color }}>
-                {currentStage.score.toFixed(1)} / 100
+              <div style={{ fontSize: '22px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: activeStage.color }}>
+                {activeStage.score.toFixed(1)} / 100
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                Severity: <span className={`severity-badge ${currentStage.severity.toLowerCase()}`}>{currentStage.severity}</span>
+                Severity: <span className={`severity-badge ${activeStage.severity.toLowerCase()}`}>{activeStage.severity}</span>
               </div>
             </div>
           </div>
@@ -600,8 +633,8 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
               <span style={{ color: 'var(--accent-cyan)' }}>{targetInfo.server_banner}</span>
             </div>
             <div>
-              <span style={{ color: 'var(--text-muted)' }}>Stage Color: </span>
-              <span style={{ color: currentStage.color, fontWeight: 700 }}>{currentStage.colorName} ({currentStage.color})</span>
+              <span style={{ color: 'var(--text-muted)' }}>Observed Status: </span>
+              <span style={{ color: activeStage.color, fontWeight: 700 }}>{activeStage.colorName} Tier ({activeStage.rate.toLocaleString()} req/s)</span>
             </div>
           </div>
 
@@ -648,8 +681,8 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
               marginTop: '16px',
               padding: '16px 20px',
               borderRadius: '12px',
-              background: currentStage.badgeBg,
-              border: `1px solid ${currentStage.color}60`,
+              background: activeStage.badgeBg,
+              border: `1px solid ${activeStage.color}60`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -663,11 +696,11 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
                   width: 44,
                   height: 44,
                   borderRadius: '50%',
-                  background: `linear-gradient(135deg, ${currentStage.color}, #0f172a)`,
+                  background: `linear-gradient(135deg, ${activeStage.color}, #0f172a)`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: `0 0 16px ${currentStage.color}60`,
+                  boxShadow: `0 0 16px ${activeStage.color}60`,
                   color: '#fff',
                   position: 'relative',
                 }}
@@ -679,7 +712,7 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
                       position: 'absolute',
                       inset: -4,
                       borderRadius: '50%',
-                      border: `2px solid ${currentStage.color}`,
+                      border: `2px solid ${activeStage.color}`,
                       animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite',
                     }}
                   />
@@ -697,18 +730,18 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
                       fontWeight: 800,
                       padding: '2px 8px',
                       borderRadius: '4px',
-                      background: currentStage.badgeBg,
-                      color: currentStage.color,
-                      border: `1px solid ${currentStage.badgeBorder}`,
+                      background: activeStage.badgeBg,
+                      color: activeStage.color,
+                      border: `1px solid ${activeStage.badgeBorder}`,
                       fontFamily: 'var(--font-mono)',
                     }}
                   >
-                    {currentStage.statusText}
+                    {activeStage.statusText}
                   </span>
                 </div>
 
                 <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.45, maxWidth: '640px' }}>
-                  {currentStage.voiceScript(targetInfo.hostname)}
+                  {activeStage.voiceScript(targetInfo.hostname)}
                 </p>
               </div>
             </div>
@@ -717,47 +750,33 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
               <button
                 type="button"
-                onClick={() => speakInspectionResult(currentStage, targetInfo?.hostname)}
+                onClick={() => speakInspectionResult(activeStage, targetInfo?.hostname)}
                 className="btn btn-secondary btn-sm"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  borderColor: `${currentStage.color}80`,
-                  color: currentStage.color,
-                  background: currentStage.badgeBg,
+                  borderColor: `${activeStage.color}80`,
+                  color: activeStage.color,
+                  background: activeStage.badgeBg,
                   fontSize: '11px',
                   padding: '6px 12px',
                   fontWeight: 800,
                 }}
               >
                 <Volume2 size={14} />
-                <span>{isSpeaking ? 'Speaking...' : `🔊 Replay Briefing (${currentStage.rate.toLocaleString()} req/s)`}</span>
+                <span>{isSpeaking ? 'Speaking...' : `🔊 Replay Briefing (${activeStage.rate.toLocaleString()} req/s)`}</span>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Live Pipeline Visualizer */}
-      {isInspecting && (
-        <div style={{ marginBottom: '24px' }}>
-          <PipelineVisualizer currentStage="anomaly_detection" />
-          <div className="processing-bar">
-            <span className="stage">Extracting Flow Rate & Measuring Inbound Velocity ({currentStage.rate.toLocaleString()} req/s)...</span>
-            <div className="progress-track">
-              <div className="progress-fill" style={{ width: '85%' }} />
-            </div>
-            <span className="pct">85%</span>
-          </div>
-        </div>
-      )}
-
-      {/* Results View */}
-      {results && (
+      {/* Results View (Charts, Timeline, Mitigation) */}
+      {results && !isInspecting && (
         <div className="animate-in">
           <div className="charts-grid">
-            <TrafficChart data={chartData} title={`Traffic Volume Flow (${currentStage.rate.toLocaleString()} req/s) → ${targetInfo?.hostname || 'Target'}`} />
+            <TrafficChart data={chartData} title={`Traffic Volume Flow (${activeStage.rate.toLocaleString()} req/s) → ${targetInfo?.hostname || 'Target'}`} />
             <AnomalyTimeline data={timelineData} title="Isolation Forest Threat Anomaly Timeline" />
           </div>
 
@@ -770,7 +789,7 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div style={{ padding: '16px', background: 'var(--bg-card)', borderRadius: '8px' }}>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Mean Request Velocity</div>
-                  <div style={{ fontSize: '22px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: currentStage.color }}>
+                  <div style={{ fontSize: '22px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: activeStage.color }}>
                     {meanPps.toLocaleString()} req/s
                   </div>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
@@ -779,11 +798,11 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
                 </div>
                 <div style={{ padding: '16px', background: 'var(--bg-card)', borderRadius: '8px' }}>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Threat Classification</div>
-                  <div style={{ fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: currentStage.color }}>
-                    {currentStage.severity}
+                  <div style={{ fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: activeStage.color }}>
+                    {activeStage.severity}
                   </div>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    {currentStage.isDanger ? '🚨 Anomaly threshold exceeded' : '✓ Nominal Baseline'}
+                    {activeStage.isDanger ? '🚨 Anomaly threshold exceeded' : '✓ Nominal Baseline'}
                   </div>
                 </div>
               </div>
@@ -795,16 +814,16 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
             className="card"
             style={{
               marginTop: '24px',
-              borderLeft: `4px solid ${currentStage.color}`,
-              boxShadow: currentStage.cardShadow,
+              borderLeft: `4px solid ${activeStage.color}`,
+              boxShadow: activeStage.cardShadow,
             }}
           >
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="card-title" style={{ color: currentStage.color, fontWeight: 800 }}>
-                {currentStage.isDanger ? '🚨 Automated Threat Mitigation & Drop Playbook' : '🟢 Verified Safe — Nominal Baseline Operating State'}
+              <span className="card-title" style={{ color: activeStage.color, fontWeight: 800 }}>
+                {activeStage.isDanger ? '🚨 Automated Threat Mitigation & Drop Playbook' : '🟢 Verified Safe — Nominal Baseline Operating State'}
               </span>
-              <span className={`severity-badge ${currentStage.severity.toLowerCase()}`}>
-                Action Plan: {currentStage.severity}
+              <span className={`severity-badge ${activeStage.severity.toLowerCase()}`}>
+                Action Plan: {activeStage.severity}
               </span>
             </div>
 
@@ -814,13 +833,13 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
               </div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
                 <span style={{ padding: '4px 10px', background: 'var(--bg-surface)', borderRadius: '6px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
-                  📍 Origin: {currentStage.isDanger ? 'Distributed Botnet Subnet (198.51.100.0/24)' : 'Internal Campus Hosts (10.0.0.0/16)'}
+                  📍 Origin: {activeStage.isDanger ? 'Distributed Botnet Subnet (198.51.100.0/24)' : 'Internal Campus Hosts (10.0.0.0/16)'}
                 </span>
                 <span style={{ padding: '4px 10px', background: 'var(--bg-surface)', borderRadius: '6px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
                   🎯 Target: {targetInfo?.resolved_ip}:{targetInfo?.port}
                 </span>
-                <span style={{ padding: '4px 10px', background: 'var(--bg-surface)', borderRadius: '6px', fontSize: '11px', fontFamily: 'var(--font-mono)', color: currentStage.color, fontWeight: 700 }}>
-                  ⚡ Observed Velocity: {currentStage.rate.toLocaleString()} req/s
+                <span style={{ padding: '4px 10px', background: 'var(--bg-surface)', borderRadius: '6px', fontSize: '11px', fontFamily: 'var(--font-mono)', color: activeStage.color, fontWeight: 700 }}>
+                  ⚡ Observed Velocity: {activeStage.rate.toLocaleString()} req/s
                 </span>
               </div>
             </div>
@@ -834,8 +853,8 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
                   <button
                     className="btn btn-secondary"
                     onClick={() => {
-                      const scriptContent = `#!/bin/bash\n# CampusShield AI Mitigation Script (SIH26145)\n# Target: ${targetInfo?.resolved_ip}:${targetInfo?.port}\n# Velocity: ${currentStage.rate} req/s\n# Severity: ${currentStage.severity}\n\necho "[+] Applying CampusShield Ingress Rules..."\n` +
-                        (currentStage.isDanger
+                      const scriptContent = `#!/bin/bash\n# CampusShield AI Mitigation Script (SIH26145)\n# Target: ${targetInfo?.resolved_ip}:${targetInfo?.port}\n# Velocity: ${activeStage.rate} req/s\n# Severity: ${activeStage.severity}\n\necho "[+] Applying CampusShield Ingress Rules..."\n` +
+                        (activeStage.isDanger
                           ? `iptables -A INPUT -p tcp --dport ${targetInfo?.port || 80} -m limit --limit 150/s --limit-burst 300 -j ACCEPT\niptables -A INPUT -s 198.51.100.0/24 -j DROP\n`
                           : `iptables -A INPUT -p tcp --dport ${targetInfo?.port || 80} -j ACCEPT\n`) +
                         `echo "[✓] Mitigation active. Traffic flow secured."\n`;
@@ -853,7 +872,7 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
                   </button>
                 </div>
                 <pre style={{ margin: 0, padding: '10px', background: 'var(--bg-input)', borderRadius: '6px', fontSize: '11px', fontFamily: 'var(--font-mono)', overflowX: 'auto', color: 'var(--text-primary)' }}>
-                  {currentStage.isDanger
+                  {activeStage.isDanger
                     ? `# Limit burst rate and drop high-frequency SYN flood source subnets\niptables -A INPUT -p tcp --dport ${targetInfo?.port || 80} -m limit --limit 150/s --limit-burst 300 -j ACCEPT\niptables -A INPUT -s 198.51.100.0/24 -j DROP`
                     : `# Standard nominal baseline rule\niptables -A INPUT -p tcp --dport ${targetInfo?.port || 80} -j ACCEPT`}
                 </pre>
@@ -871,10 +890,10 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
                         system: "CampusShield AI (SIH26145)",
                         timestamp: new Date().toISOString(),
                         target: `${targetInfo?.resolved_ip}:${targetInfo?.port}`,
-                        velocity: `${currentStage.rate} req/s`,
-                        severity: currentStage.severity,
-                        waf_rate_limit: currentStage.isDanger ? "50r/s" : "150r/s",
-                        blocked_subnets: currentStage.isDanger ? ["198.51.100.0/24"] : [],
+                        velocity: `${activeStage.rate} req/s`,
+                        severity: activeStage.severity,
+                        waf_rate_limit: activeStage.isDanger ? "50r/s" : "150r/s",
+                        blocked_subnets: activeStage.isDanger ? ["198.51.100.0/24"] : [],
                       };
                       const blob = new Blob([JSON.stringify(policy, null, 2)], { type: 'application/json' });
                       const url = URL.createObjectURL(blob);
@@ -890,7 +909,7 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
                   </button>
                 </div>
                 <pre style={{ margin: 0, padding: '10px', background: 'var(--bg-input)', borderRadius: '6px', fontSize: '11px', fontFamily: 'var(--font-mono)', overflowX: 'auto', color: 'var(--text-primary)' }}>
-                  {currentStage.isDanger
+                  {activeStage.isDanger
                     ? `# Zone rate limiter for 10,000 req/s flood\nlimit_req_zone $binary_remote_addr zone=flood_limit:10m rate=50r/s;\nlocation / {\n    limit_req zone=flood_limit burst=100 nodelay;\n}`
                     : `# Standard security headers\nadd_header X-Frame-Options SAMEORIGIN;\nadd_header X-Content-Type-Options nosniff;`}
                 </pre>
@@ -898,9 +917,9 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
             </div>
 
             <div style={{ padding: '12px 14px', background: 'var(--bg-surface)', borderRadius: '8px', fontSize: '12px' }}>
-              <strong style={{ color: currentStage.color }}>Data Diode Hardware Protection: </strong>
+              <strong style={{ color: activeStage.color }}>Data Diode Hardware Protection: </strong>
               <span style={{ color: 'var(--text-secondary)' }}>
-                {currentStage.isDanger
+                {activeStage.isDanger
                   ? 'Adjust hardware optical transmit buffers to absorb burst queuing without dropping mission-critical telemetry frames.'
                   : 'Hardware optical diode is operating within safe physical link tolerances.'}
               </span>
