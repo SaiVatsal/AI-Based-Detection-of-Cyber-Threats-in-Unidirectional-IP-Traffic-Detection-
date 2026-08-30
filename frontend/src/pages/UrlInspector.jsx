@@ -36,6 +36,7 @@ import ContributingFactors from '../components/ContributingFactors';
 import { inspectUrl, getDetectionResults, getContributingFactors } from '../services/api';
 
 const QUICK_PRESETS = [
+  { label: '🚨 DDoS Attack (10,000 req/s)', url: 'http://198.51.100.24/ddos-syn-flood', isAttack: true },
   { label: 'LeetCode', url: 'https://leetcode.com' },
   { label: 'YouTube', url: 'https://youtube.com' },
   { label: 'Instagram', url: 'https://instagram.com' },
@@ -370,9 +371,29 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
     let selectedStage;
     let providerName = 'Edge Cloud Gateway';
     let bannerName = 'HTTP/2 Unidirectional Safe Gateway';
-    let resolvedIp = '198.51.100.24';
-
-    if (/leetcode/i.test(cleaned)) {
+    if (/ddos|flood|botnet|attack|stress|syn|198\.51\.100/i.test(cleaned)) {
+      providerName = 'Mirai Botnet Command Cluster (AS99999)';
+      bannerName = 'SYN-ACK Volumetric Reflection Vector';
+      resolvedIp = '198.51.100.24';
+      selectedStage = {
+        id: 4,
+        rate: 10000,
+        color: '#ff0055',
+        colorName: 'Red',
+        badgeBg: 'rgba(255, 0, 85, 0.25)',
+        badgeBorder: 'rgba(255, 0, 85, 0.5)',
+        cardShadow: '0 0 28px rgba(255, 0, 85, 0.35)',
+        title: '🚨 CRITICAL 10,000 REQ/S DDoS FLOOD ATTACK DETECTED (DANGER)',
+        statusText: 'STATUS: CRITICAL 10,000 REQ/S FLOOD (DANGER)',
+        rateSubtext: '🚨 10,000 REQ/S CRITICAL FLOOD DETECTED (18.4 SIGMA ANOMALY)',
+        score: 98.6,
+        severity: 'CRITICAL',
+        isDanger: true,
+        bandwidth: 48.5,
+        voiceScript: (host) =>
+          `Attention Operator! Critical volumetric D-DoS flood detected on ${host}. Incoming rate has exploded to 10,000 requests per second with an eighteen sigma deviation. Automated firewall mitigation rules deployed.`,
+      };
+    } else if (/leetcode/i.test(cleaned)) {
       providerName = 'Cloudflare Edge Network (AS13335)';
       bannerName = 'Cloudflare TLSv1.3 Enterprise WAF';
       resolvedIp = '104.22.18.232';
