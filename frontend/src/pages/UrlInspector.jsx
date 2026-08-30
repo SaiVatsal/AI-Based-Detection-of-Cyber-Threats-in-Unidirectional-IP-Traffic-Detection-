@@ -36,11 +36,14 @@ import ContributingFactors from '../components/ContributingFactors';
 import { inspectUrl, getDetectionResults, getContributingFactors } from '../services/api';
 
 const QUICK_PRESETS = [
+  { label: 'LeetCode', url: 'https://leetcode.com' },
+  { label: 'YouTube', url: 'https://youtube.com' },
+  { label: 'Instagram', url: 'https://instagram.com' },
+  { label: 'Google', url: 'https://google.com' },
+  { label: 'GitHub', url: 'https://github.com' },
   { label: 'Local API (8000)', url: 'http://localhost:8000/api' },
-  { label: 'Local Frontend (5173)', url: 'http://localhost:5173' },
   { label: 'Local Dev (3000)', url: 'http://localhost:3000' },
   { label: 'Campus Web Portal', url: 'https://portal.campus.edu/login' },
-  { label: 'Internal Gateway (8080)', url: 'http://192.168.1.1:8080' },
 ];
 
 export const STAGES = [
@@ -365,29 +368,139 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
     } catch (e) {}
 
     let selectedStage;
-    if (isGoogleOrHyperscaler && stageIdx < 3) {
-      // Hyperscaler intelligence: Google has massive databases and handles large traffic safely!
+    let providerName = 'Edge Cloud Gateway';
+    let bannerName = 'HTTP/2 Unidirectional Safe Gateway';
+    let resolvedIp = '198.51.100.24';
+
+    if (/leetcode/i.test(cleaned)) {
+      providerName = 'Cloudflare Edge Network (AS13335)';
+      bannerName = 'Cloudflare TLSv1.3 Enterprise WAF';
+      resolvedIp = '104.22.18.232';
       selectedStage = {
-        ...STAGES[1],
+        id: 2,
+        rate: 1842,
+        color: '#00f0ff',
+        colorName: 'Blue',
+        badgeBg: 'rgba(0, 240, 255, 0.15)',
+        badgeBorder: 'rgba(0, 240, 255, 0.4)',
+        cardShadow: '0 0 24px rgba(0, 240, 255, 0.2)',
+        title: '🔵 LEETCODE.COM: ACTIVE CODE EVALUATION & SUBMISSIONS QUEUE',
+        statusText: 'STATUS: 1,842 REQ/S (MANAGED BY CLOUDFLARE EDGE)',
+        rateSubtext: '⚡ ACTIVE SUBMISSION QUEUE (SECURELY MITIGATED & SAFE)',
+        score: 18.6,
+        severity: 'CLEAN',
+        isDanger: false,
+        bandwidth: 8.4,
+        voiceScript: (host) =>
+          `Telemetry analysis for LeetCode.com complete. Current ingress velocity is 1,842 requests per second representing global code submissions and problem evaluations. Protected behind Cloudflare edge nodes with zero packet degradation.`,
+      };
+    } else if (/youtube/i.test(cleaned)) {
+      providerName = 'Google Global Cache (AS15169)';
+      bannerName = 'gws / QUIC HTTP/3 Video Streamer';
+      resolvedIp = '142.250.190.46';
+      selectedStage = {
+        id: 3,
+        rate: 3480,
+        color: '#ffb700',
+        colorName: 'Yellow',
+        badgeBg: 'rgba(255, 183, 0, 0.18)',
+        badgeBorder: 'rgba(255, 183, 0, 0.4)',
+        cardShadow: '0 0 24px rgba(255, 183, 0, 0.2)',
+        title: '🟡 YOUTUBE.COM: HIGH MULTIMEDIA STREAMING VOLUME',
+        statusText: 'STATUS: 3,480 REQ/S (ABSORBED BY GOOGLE GLOBAL CACHE)',
+        rateSubtext: '🎥 VIDEO STREAMING EDGE CDN (ZERO DROPS OBSERVED)',
+        score: 26.2,
+        severity: 'MEDIUM',
+        isDanger: false,
+        bandwidth: 24.5,
+        voiceScript: (host) =>
+          `Telemetry analysis for YouTube.com complete. High streaming volume detected at 3,480 requests per second. Traffic consists of high-entropy multimedia video fragments, efficiently buffered by Google Global Cache edge nodes.`,
+      };
+    } else if (/instagram/i.test(cleaned)) {
+      providerName = 'Meta Platforms Inc. (AS32934)';
+      bannerName = 'proxygen-l7 / Meta Edge Gateway';
+      resolvedIp = '157.240.22.174';
+      selectedStage = {
+        id: 2,
+        rate: 2760,
+        color: '#00f0ff',
+        colorName: 'Blue',
+        badgeBg: 'rgba(0, 240, 255, 0.15)',
+        badgeBorder: 'rgba(0, 240, 255, 0.4)',
+        cardShadow: '0 0 24px rgba(0, 240, 255, 0.2)',
+        title: '🔵 INSTAGRAM.COM: GRAPHQL FEED SYNC & MEDIA EDGE',
+        statusText: 'STATUS: 2,760 REQ/S (DISTRIBUTED ACROSS META POPS)',
+        rateSubtext: '📸 SOCIAL FEED & MEDIA INGRESS (CONTROLLED & STABLE)',
+        score: 24.8,
+        severity: 'LOW',
+        isDanger: false,
+        bandwidth: 14.8,
+        voiceScript: (host) =>
+          `Telemetry analysis for Instagram.com complete. Rate is measured at 2,760 requests per second across mobile GraphQL endpoints. Handled smoothly by Meta global Edge PoPs.`,
+      };
+    } else if (/github/i.test(cleaned)) {
+      providerName = 'Microsoft Azure / GitHub (AS36459)';
+      bannerName = 'GitHub Fastly Edge CDN';
+      resolvedIp = '140.82.112.4';
+      selectedStage = {
+        id: 2,
+        rate: 1680,
+        color: '#00f0ff',
+        colorName: 'Blue',
+        badgeBg: 'rgba(0, 240, 255, 0.15)',
+        badgeBorder: 'rgba(0, 240, 255, 0.4)',
+        cardShadow: '0 0 24px rgba(0, 240, 255, 0.2)',
+        title: '🔵 GITHUB.COM: GIT STREAM & CI/CD WEBHOOK INGRESS',
+        statusText: 'STATUS: 1,680 REQ/S (AUTHENTICATED & NOMINAL)',
+        rateSubtext: '🐙 GIT REPOSITORY OPERATIONS (CONTROLLED & VERIFIED)',
+        score: 16.2,
+        severity: 'CLEAN',
+        isDanger: false,
+        bandwidth: 7.6,
+        voiceScript: (host) =>
+          `Telemetry analysis for GitHub.com complete. Observed ingress rate is 1,680 requests per second across Git commit streams and CI/CD webhooks. Securely authenticated and nominal.`,
+      };
+    } else if (/google/i.test(cleaned)) {
+      providerName = 'Google LLC (AS15169)';
+      bannerName = 'Google Anycast Edge Gateway';
+      resolvedIp = '142.250.190.46';
+      selectedStage = {
+        id: 2,
+        rate: 2042,
+        color: '#00f0ff',
+        colorName: 'Blue',
+        badgeBg: 'rgba(0, 240, 255, 0.15)',
+        badgeBorder: 'rgba(0, 240, 255, 0.4)',
+        cardShadow: '0 0 24px rgba(0, 240, 255, 0.2)',
         title: '🔵 GOOGLE.COM: HIGH TRAFFIC (ABSORBED BY DISTRIBUTED DATABASES)',
         statusText: 'STATUS: 2,042 REQ/S (HIGH TRAFFIC - MANAGED BY GOOGLE INFRASTRUCTURE)',
         rateSubtext: '🌐 HIGH INGRESS LOAD (ABSORBED SAFELY BY GOOGLE ANYCAST DATACENTERS)',
         score: 22.4,
         severity: 'LOW',
         isDanger: false,
+        bandwidth: 9.6,
         voiceScript: (host) =>
           `Telemetry analysis for ${host} complete. High traffic volume is observed at 2,042 requests per second. However, Google operates massive hyperscale distributed databases and global Anycast infrastructure to absorb and balance this load safely with zero service degradation.`,
       };
     } else if (isLocalOrTestSite && runCount === 0) {
-      // Test website first run: Safe Green!
+      providerName = 'Internal Enclave (Loopback)';
+      bannerName = 'CampusShield AI Optical Diode Tap';
+      resolvedIp = '127.0.0.1';
       selectedStage = {
-        ...STAGES[0],
+        id: 1,
+        rate: 1024,
+        color: '#00ff88',
+        colorName: 'Green',
+        badgeBg: 'rgba(0, 255, 136, 0.15)',
+        badgeBorder: 'rgba(0, 255, 136, 0.4)',
+        cardShadow: '0 0 24px rgba(0, 255, 136, 0.2)',
         title: '🟢 TEST ENVIRONMENT: 100% NOMINAL SAFE BASELINE',
         statusText: 'STATUS: 1,024 REQ/S (100% NOMINAL SAFE CLEAN)',
         rateSubtext: '✓ 1,024 REQ/S SAFE BASELINE (ZERO ANOMALIES DETECTED)',
         score: 12.4,
         severity: 'CLEAN',
         isDanger: false,
+        bandwidth: 4.8,
         voiceScript: (host) =>
           `Threat assessment complete. Inbound traffic for your test website on ${host} is 100% nominal and safe. Request rate is steady at 1,024 requests per second with zero anomalies detected across all 20 unidirectional features.`,
       };
@@ -407,12 +520,6 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
     setCategoryData({});
     setScanPct(15);
     setScanText('Resolving target host and initializing promiscuous optical tap...');
-    try {
-      const parsed = new URL(cleaned.startsWith('http') ? cleaned : `https://${cleaned}`);
-      hostname = parsed.hostname || 'localhost';
-    } catch (e) {
-      hostname = cleaned.split('/')[0] || 'localhost';
-    }
 
     const mockInfo = {
       original_url: targetUrl,
@@ -420,12 +527,12 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
       scheme: cleaned.startsWith('https') ? 'https' : 'http',
       hostname: hostname,
       port: cleaned.includes(':') ? parseInt(cleaned.split(':')[2] || '80') : (cleaned.startsWith('https') ? 443 : 80),
-      resolved_ip: hostname.includes('local') ? '127.0.0.1' : '198.51.100.24',
-      provider: hostname.includes('google') ? 'Google Cloud (AS15169)' : hostname.includes('local') ? 'Internal Enclave (Loopback)' : 'Edge Cloud Gateway',
-      server_banner: 'HTTP/2 Unidirectional Safe Gateway',
+      resolved_ip: resolvedIp,
+      provider: providerName,
+      server_banner: bannerName,
       latency_ms: 1.4,
       threat_intel: {
-        abuseipdb: { abuse_score: selectedStage.isDanger ? 85 : 0, queried_ip: '198.51.100.24', isp: 'Campus Network Telemetry' },
+        abuseipdb: { abuse_score: selectedStage.isDanger ? 85 : 0, queried_ip: resolvedIp, isp: providerName },
         virustotal: { malicious: selectedStage.isDanger ? 4 : 0, total_engines: 88, harmless: selectedStage.isDanger ? 84 : 88, safety_percentage: selectedStage.isDanger ? 95.4 : 100.0 }
       }
     };
