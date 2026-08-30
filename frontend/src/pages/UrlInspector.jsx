@@ -376,6 +376,7 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
     let selectedStage;
     let providerName = 'Edge Cloud Gateway';
     let bannerName = 'HTTP/2 Unidirectional Safe Gateway';
+    let resolvedIp = '127.0.0.1';
     if (/ddos|flood|botnet|attack|stress|syn|198\.51\.100/i.test(cleaned)) {
       providerName = 'Mirai Botnet Command Cluster (AS99999)';
       bannerName = 'SYN-ACK Volumetric Reflection Vector';
@@ -726,9 +727,9 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
 
       {/* Target Input Card */}
       <div className="card" style={{ marginBottom: '24px', borderTop: targetInfo ? `3px solid ${activeStage.color}` : '1px solid var(--border-default)', transition: 'all 0.3s ease' }}>
-        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
           <span className="card-title">Target Host & Telemetry Probe Configuration</span>
-          <span style={{ fontSize: '12px', color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)' }}>
+          <span style={{ fontSize: '11px', color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
             Unidirectional Safe Passive Engine
           </span>
         </div>

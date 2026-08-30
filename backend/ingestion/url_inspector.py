@@ -6,6 +6,7 @@ fingerprinting, latency analysis, and unidirectional telemetry generation
 for any given URL (Gemini, Google, GitHub, Localhost, or custom endpoints).
 """
 
+import json
 import math
 import random
 import socket

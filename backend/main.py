@@ -1,6 +1,6 @@
 import logging ## records 
 from contextlib import asynccontextmanager
-# mangaes the startup and shutdoen the application 
+# mangaes the startup and shutdoen the application ``
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
