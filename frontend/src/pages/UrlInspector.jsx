@@ -548,7 +548,7 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
     setScanText('Resolving target host and initializing promiscuous optical tap...');
 
     const mockInfo = {
-      original_url: targetUrl,
+      original_url: rawUrl,
       normalized_url: cleaned,
       scheme: cleaned.startsWith('https') ? 'https' : 'http',
       hostname: hostname,
@@ -564,28 +564,28 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
     };
 
     setTimeout(() => {
-      setScanPct(42);
+      setScanPct(45);
       setScanText('Extracting 20 unidirectional statistical features (Δt jitter, byte entropy, packet skewness)...');
-    }, 700);
+    }, 350);
 
     setTimeout(() => {
-      setScanPct(72);
+      setScanPct(75);
       setScanText('Evaluating Isolation Forest anomaly trees & computing Shannon entropy deviations...');
-    }, 1600);
+    }, 750);
 
     setTimeout(() => {
-      setScanPct(91);
+      setScanPct(95);
       setScanText('Querying AbuseIPDB & VirusTotal 88/88 multi-engine threat radar...');
-    }, 2400);
+    }, 1100);
 
     setTimeout(() => {
       setScanPct(100);
       setScanText('Synthesizing telemetry verdict & defense playbooks...');
-    }, 3000);
+    }, 1400);
 
     try {
       const res = await inspectUrl({
-        url: targetUrl.trim(),
+        url: rawUrl,
         traffic_profile: selectedStage.isDanger ? 'stress_spike' : 'standard',
         packet_count: packetCount,
       });
@@ -597,14 +597,14 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
         setIsInspecting(false);
         setTargetInfo(finalTargetInfo);
         applyStageData(selectedStage, finalTargetInfo, res?.data?.results || []);
-      }, 3400);
+      }, 1500);
     } catch (err) {
       console.warn('Backend API inspection fallback to dynamic simulation:', err);
       setTimeout(() => {
         setIsInspecting(false);
         setTargetInfo(mockInfo);
         applyStageData(selectedStage, mockInfo, []);
-      }, 3400);
+      }, 1500);
     }
   };
 
@@ -756,6 +756,10 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
               type="submit"
               className="btn btn-primary"
               disabled={isInspecting || !targetUrl.trim()}
+              onClick={(e) => {
+                e.preventDefault();
+                handleInspect();
+              }}
               style={{
                 minWidth: '260px',
                 fontWeight: 800,
