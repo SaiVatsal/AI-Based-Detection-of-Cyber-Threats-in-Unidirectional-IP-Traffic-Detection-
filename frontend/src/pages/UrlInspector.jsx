@@ -339,10 +339,15 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
     speakInspectionResult(st, tInfo?.hostname);
   };
 
-  const handleInspect = async () => {
-    if (!targetUrl.trim() || isInspecting) return;
+  const handleInspect = async (urlOverride = null) => {
+    const rawUrl = (typeof urlOverride === 'string' ? urlOverride : targetUrl).trim();
+    if (!rawUrl || isInspecting) return;
 
-    let cleaned = targetUrl.trim();
+    if (typeof urlOverride === 'string') {
+      setTargetUrl(urlOverride);
+    }
+
+    let cleaned = rawUrl;
     let hostname = 'localhost';
     try {
       const parsed = new URL(cleaned.startsWith('http') ? cleaned : `https://${cleaned}`);
@@ -788,12 +793,14 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
                 className="btn btn-secondary btn-sm"
                 style={{
                   fontSize: '11px',
-                  padding: '3px 8px',
-                  background: targetUrl === p.url ? 'rgba(0, 240, 255, 0.1)' : undefined,
-                  borderColor: targetUrl === p.url ? 'var(--accent-cyan)' : undefined,
-                  color: targetUrl === p.url ? 'var(--accent-cyan)' : undefined,
+                  padding: '4px 10px',
+                  background: targetUrl === p.url ? (p.isAttack ? 'rgba(255, 0, 85, 0.2)' : 'rgba(0, 240, 255, 0.15)') : undefined,
+                  borderColor: p.isAttack ? 'var(--severity-critical)' : (targetUrl === p.url ? 'var(--accent-cyan)' : 'var(--border-default)'),
+                  color: p.isAttack ? 'var(--severity-critical)' : (targetUrl === p.url ? 'var(--accent-cyan)' : 'var(--text-secondary)'),
+                  fontWeight: p.isAttack || targetUrl === p.url ? 700 : 500,
+                  boxShadow: p.isAttack ? '0 0 10px rgba(255,0,85,0.2)' : undefined,
                 }}
-                onClick={() => setTargetUrl(p.url)}
+                onClick={() => handleInspect(p.url)}
                 disabled={isInspecting}
               >
                 {p.label}
