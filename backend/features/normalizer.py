@@ -8,11 +8,53 @@ feature scaling between training and inference.
 import logging
 from pathlib import Path
 from typing import Optional
+import pickle
 
 import numpy as np
 import pandas as pd
-import joblib
-from sklearn.preprocessing import StandardScaler
+
+try:
+    import joblib
+except ImportError:
+    class JoblibCompat:
+        @staticmethod
+        def dump(obj, filename):
+            with open(filename, 'wb') as f:
+                pickle.dump(obj, f)
+
+        @staticmethod
+        def load(filename):
+            with open(filename, 'rb') as f:
+                return pickle.load(f)
+
+    joblib = JoblibCompat()
+
+try:
+    from sklearn.preprocessing import StandardScaler
+except ImportError:
+    class StandardScaler:
+        def __init__(self):
+            self.mean_ = None
+            self.scale_ = None
+
+        def fit(self, X):
+            self.mean_ = np.mean(X, axis=0)
+            self.scale_ = np.std(X, axis=0)
+            self.scale_[self.scale_ == 0] = 1.0
+            return self
+
+        def transform(self, X):
+            if self.mean_ is None:
+                return X
+            return (X - self.mean_) / self.scale_
+
+        def fit_transform(self, X):
+            return self.fit(X).transform(X)
+
+        def inverse_transform(self, X):
+            if self.mean_ is None:
+                return X
+            return (X * self.scale_) + self.mean_
 
 from backend.config import MODEL_DIR
 from backend.features.extractor import FEATURE_NAMES

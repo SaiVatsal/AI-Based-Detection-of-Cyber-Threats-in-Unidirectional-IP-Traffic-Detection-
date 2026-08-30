@@ -8,10 +8,14 @@ Provides FastAPI dependencies for protecting routes.
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+import hashlib
+import hmac
+from datetime import datetime, timedelta, timezone
+from typing import Optional
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from backend.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, DEMO_USERS
@@ -20,19 +24,25 @@ from backend.database.crud import get_user_by_username, create_user, update_last
 from backend.database.models import User
 
 # ---------------------------------------------------------------------------
-# Password hashing
+# Password hashing (Direct bcrypt / SHA-256 for Python 3.14 compatibility)
 # ---------------------------------------------------------------------------
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+try:
+    import bcrypt
+    def hash_password(plain: str) -> str:
+        salt = bcrypt.gensalt()
+        return bcrypt.hashpw(plain.encode('utf-8')[:72], salt).decode('utf-8')
 
+    def verify_password(plain: str, hashed: str) -> bool:
+        try:
+            return bcrypt.checkpw(plain.encode('utf-8')[:72], hashed.encode('utf-8'))
+        except Exception:
+            return False
+except Exception:
+    def hash_password(plain: str) -> str:
+        return hashlib.sha256(plain.encode('utf-8')).hexdigest()
 
-def hash_password(plain: str) -> str:
-    """Hash a plaintext password with bcrypt."""
-    return pwd_context.hash(plain)
-
-
-def verify_password(plain: str, hashed: str) -> bool:
-    """Verify a plaintext password against a bcrypt hash."""
-    return pwd_context.verify(plain, hashed)
+    def verify_password(plain: str, hashed: str) -> bool:
+        return hmac.compare_digest(hashlib.sha256(plain.encode('utf-8')).hexdigest(), hashed)
 
 
 # ---------------------------------------------------------------------------

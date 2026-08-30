@@ -10,20 +10,39 @@ from datetime import datetime, timezone
 from pathlib import Path
 from io import BytesIO
 
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch, mm
-from reportlab.platypus import (
-    SimpleDocTemplate,
-    Paragraph,
-    Spacer,
-    Table,
-    TableStyle,
-    PageBreak,
-    HRFlowable,
-)
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+try:
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch, mm
+    from reportlab.platypus import (
+        SimpleDocTemplate,
+        Paragraph,
+        Spacer,
+        Table,
+        TableStyle,
+        PageBreak,
+        HRFlowable,
+    )
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+    HAS_REPORTLAB = True
+    BRAND_DARK = colors.HexColor("#0a0e1a")
+    BRAND_PRIMARY = colors.HexColor("#00d4ff")
+    BRAND_ACCENT = colors.HexColor("#1a1f35")
+    BRAND_RED = colors.HexColor("#ff3b5c")
+    BRAND_AMBER = colors.HexColor("#ffb524")
+    BRAND_GREEN = colors.HexColor("#00e676")
+    SEVERITY_COLORS = {
+        "CRITICAL": BRAND_RED,
+        "HIGH": colors.HexColor("#ff6b3b"),
+        "MEDIUM": BRAND_AMBER,
+        "LOW": BRAND_GREEN,
+        "NONE": colors.HexColor("#666666"),
+    }
+except ImportError:
+    HAS_REPORTLAB = False
+    BRAND_DARK = BRAND_PRIMARY = BRAND_ACCENT = BRAND_RED = BRAND_AMBER = BRAND_GREEN = None
+    SEVERITY_COLORS = {}
 
 from sqlalchemy.orm import Session
 
@@ -31,22 +50,6 @@ from backend.config import REPORT_DIR
 from backend.database import crud
 
 logger = logging.getLogger(__name__)
-
-# Brand colors
-BRAND_DARK = colors.HexColor("#0a0e1a")
-BRAND_PRIMARY = colors.HexColor("#00d4ff")
-BRAND_ACCENT = colors.HexColor("#1a1f35")
-BRAND_RED = colors.HexColor("#ff3b5c")
-BRAND_AMBER = colors.HexColor("#ffb524")
-BRAND_GREEN = colors.HexColor("#00e676")
-
-SEVERITY_COLORS = {
-    "CRITICAL": BRAND_RED,
-    "HIGH": colors.HexColor("#ff6b3b"),
-    "MEDIUM": BRAND_AMBER,
-    "LOW": BRAND_GREEN,
-    "NONE": colors.HexColor("#666666"),
-}
 
 
 def _build_styles():
@@ -121,10 +124,27 @@ def generate_report(db: Session, session_id: int, generated_by: str = "system") 
     results = crud.get_detection_results_for_session(db, session_id)
     alerts = crud.list_alerts(db, session_id=session_id, limit=100)
 
-    # Generate filename
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    filename = f"campusshield_report_{session_id}_{timestamp}.pdf"
+    # Output path
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"report_session_{session_id}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.pdf"
     file_path = REPORT_DIR / filename
+
+    if not HAS_REPORTLAB:
+        total_w = len(results)
+        anom_w = len([r for r in results if r.is_anomaly])
+        file_path.write_text(
+            f"CampusShield AI Incident Audit Report\nSession ID: {session_id}\nTotal Windows: {total_w}\nAnomalous Windows: {anom_w}\nGenerated: {datetime.now(timezone.utc)}\n",
+            encoding="utf-8"
+        )
+        file_size = file_path.stat().st_size
+        crud.create_report(
+            db,
+            session_id=session_id,
+            file_path=str(file_path),
+            file_size_bytes=file_size,
+            generated_by=generated_by,
+        )
+        return file_path
 
     # Build PDF
     doc = SimpleDocTemplate(
