@@ -100,6 +100,82 @@
 }
 
 /* ---------------------------------------------------------------------------
+   Light Mode Theme Overrides
+   --------------------------------------------------------------------------- */
+[data-theme="light"] {
+  /* Light SOC Background Hierarchy */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-surface: #e2e8f0;
+  --bg-input: #ffffff;
+  --bg-elevated: #f1f5f9;
+
+  /* Typography Colors */
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-inverse: #ffffff;
+
+  /* Cyber Accents */
+  --accent-cyan: #0284c7;
+  --accent-cyan-dim: #0369a1;
+  --accent-cyan-glow: rgba(2, 132, 199, 0.15);
+  --accent-blue: #2563eb;
+  --accent-purple: #9333ea;
+  --accent-purple-glow: rgba(147, 51, 234, 0.15);
+  --accent-emerald: #059669;
+  --accent-amber: #d97706;
+  --accent-crimson: #dc2626;
+
+  /* Severity Spectrum */
+  --severity-critical: #dc2626;
+  --severity-critical-glow: rgba(220, 38, 38, 0.15);
+  --severity-high: #ea580c;
+  --severity-high-glow: rgba(234, 88, 12, 0.15);
+  --severity-medium: #d97706;
+  --severity-medium-glow: rgba(217, 119, 6, 0.15);
+  --severity-low: #059669;
+  --severity-low-glow: rgba(5, 150, 105, 0.15);
+  --severity-none: #64748b;
+
+  /* Status Colors */
+  --status-success: #059669;
+  --status-warning: #d97706;
+  --status-error: #dc2626;
+  --status-info: #0284c7;
+
+  /* Borders & Highlights */
+  --border-default: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --border-active: #0284c7;
+  --border-hover: #cbd5e1;
+  --border-cyan: rgba(2, 132, 199, 0.35);
+  --border-purple: rgba(147, 51, 234, 0.35);
+
+  /* Elevation & Glow Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.08);
+  --shadow-glow-cyan: 0 0 16px rgba(2, 132, 199, 0.15);
+  --shadow-glow-crimson: 0 0 16px rgba(220, 38, 38, 0.15);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-blur: 16px;
+}
+
+[data-theme="light"] body {
+  background-image: 
+    radial-gradient(ellipse 80% 60% at 50% -20%, rgba(2, 132, 199, 0.06), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 90%, rgba(147, 51, 234, 0.04), transparent 60%),
+    linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
+}
+
+/* ---------------------------------------------------------------------------
    Reset & Base Styles
    --------------------------------------------------------------------------- */
 *, *::before, *::after {

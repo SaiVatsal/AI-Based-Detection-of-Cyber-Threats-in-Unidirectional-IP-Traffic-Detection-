@@ -1,15 +1,6 @@
-"""
-CampusShield AI — FastAPI Application Entry Point
-===================================================
-SIH26145: Unidirectional IP Traffic Threat Detection System
-
-Start with:
-    uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
-"""
-
-import logging
+import logging ## records 
 from contextlib import asynccontextmanager
-
+# mangaes the startup and shutdoen the application 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -26,7 +17,7 @@ from backend.alerts.websocket import manager
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+    datefmt="%Y-%m-%d %H:%M:%S", ## 
 )
 logger = logging.getLogger("campusshield")
 
@@ -50,7 +41,7 @@ async def lifespan(app: FastAPI):
     # Seed demo users
     db = SessionLocal()
     try:
-        seed_demo_users(db)
+        seed_demo_users(db)## if real adim login only get fulll acess or no acces only view
         logger.info("Demo users seeded (admin/analyst)")
     finally:
         db.close()
@@ -96,7 +87,7 @@ app.add_middleware(
 REPORT_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/reports", StaticFiles(directory=str(REPORT_DIR)), name="reports")
 
-# ---------------------------------------------------------------------------
+
 # API Routes
 # ---------------------------------------------------------------------------
 app.include_router(api_router)

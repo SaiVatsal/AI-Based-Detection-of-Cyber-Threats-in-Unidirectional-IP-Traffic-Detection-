@@ -1,37 +1,22 @@
-"""
-CampusShield AI — Application Configuration
-============================================
-Environment-based configuration with secure defaults.
-All sensitive values should be overridden via environment variables in production.
-"""
+
 
 import os
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Paths
-# ---------------------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 UPLOAD_DIR = DATA_DIR / "uploads"
 MODEL_DIR = DATA_DIR / "models"
 REPORT_DIR = DATA_DIR / "reports"
 
-# Ensure directories exist at import time
 for _dir in (DATA_DIR, UPLOAD_DIR, MODEL_DIR, REPORT_DIR):
     _dir.mkdir(parents=True, exist_ok=True)
 
-# ---------------------------------------------------------------------------
-# Database
-# ---------------------------------------------------------------------------
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     f"sqlite:///{DATA_DIR / 'campusshield.db'}",
 )
-
-# ---------------------------------------------------------------------------
-# Authentication
-# ---------------------------------------------------------------------------
+# auth
 SECRET_KEY = os.getenv(
     "SECRET_KEY",
     "campusshield-dev-secret-change-in-production-82a7f3c1",

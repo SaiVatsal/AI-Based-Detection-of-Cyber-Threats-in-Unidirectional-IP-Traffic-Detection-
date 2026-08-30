@@ -23,6 +23,10 @@ import {
   Sparkles,
   MessageSquare,
   Binary,
+  History,
+  FileText,
+  Trash2,
+  Download,
 } from 'lucide-react';
 import PipelineVisualizer from '../components/PipelineVisualizer';
 import TrafficChart from '../components/TrafficChart';
@@ -159,12 +163,29 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
   const [runCount, setRunCount] = useState(0);
   const [activeStage, setActiveStage] = useState(STAGES[0]);
 
+  // Inspection History Logs (Persisted in localStorage)
+  const [inspectionHistory, setInspectionHistory] = useState(() => {
+    try {
+      const stored = localStorage.getItem('campusshield_inspection_history');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
   const [peakPps, setPeakPps] = useState(0);
   const [meanPps, setMeanPps] = useState(0);
   const [bandwidthMBs, setBandwidthMBs] = useState(0);
 
   const [voiceMuted, setVoiceMuted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+
+  // Sync inspection history to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('campusshield_inspection_history', JSON.stringify(inspectionHistory));
+    } catch (e) {}
+  }, [inspectionHistory]);
 
   const playGeminiChime = (isDanger) => {
     try {
@@ -277,6 +298,39 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
       }))
     );
 
+    // Save into Persistent History Log
+    const newLogEntry = {
+      id: Date.now(),
+      runNumber: inspectionHistory.length + 1,
+      timestamp: new Date().toLocaleTimeString(),
+      url: tInfo?.original_url || targetUrl,
+      hostname: tInfo?.hostname || 'localhost',
+      resolved_ip: tInfo?.resolved_ip || '127.0.0.1',
+      rate: st.rate,
+      score: st.score,
+      severity: st.severity,
+      isDanger: st.isDanger,
+      color: st.color,
+      statusText: st.statusText,
+    };
+    setInspectionHistory((prev) => [newLogEntry, ...prev.slice(0, 49)]);
+
+    // Trigger In-App Notification Toast
+    window.dispatchEvent(
+      new CustomEvent('campusshield:inspection_complete', {
+        detail: {
+          title: st.title,
+          url: tInfo?.original_url || targetUrl,
+          rate: st.rate,
+          score: st.score,
+          severity: st.severity,
+          statusText: st.statusText,
+          color: st.color,
+          isDanger: st.isDanger,
+        },
+      })
+    );
+
     // Play Voice Alert
     speakInspectionResult(st, tInfo?.hostname);
   };
@@ -382,10 +436,8 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
     }
   };
 
-  // Helper to generate live feature values for the 20-features grid
   const getLiveFeatureValue = (featureId, rate) => {
     const isFlood = rate >= 10000;
-    const isElevated = rate >= 2042;
     switch (featureId) {
       case 1: return `${Math.round(rate).toLocaleString()}`;
       case 2: return `${Math.round(rate * 520).toLocaleString()}`;
@@ -409,6 +461,21 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
       case 20: return isFlood ? '3.12 bits/B' : '6.45 bits/B';
       default: return '0.00';
     }
+  };
+
+  const handleExportHistoryCSV = () => {
+    if (inspectionHistory.length === 0) return;
+    let csv = 'Run,Timestamp,Target_URL,Observed_Velocity_req_s,Threat_Score,Severity,Status\n';
+    inspectionHistory.forEach((h) => {
+      csv += `"${h.runNumber}","${h.timestamp}","${h.url}","${h.rate}","${h.score}","${h.severity}","${h.statusText}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `campusshield_inspection_history_${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -845,7 +912,7 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
         </div>
       )}
 
-      {/* Results View (Charts, Timeline, Live 20-Features Matrix, Mitigation) */}
+      {/* Results View (Charts, Timeline, Live 20-Features Matrix, Mitigation, History Table) */}
       {results && !isInspecting && (
         <div className="animate-in">
           <div className="charts-grid">
@@ -1046,6 +1113,86 @@ export default function UrlInspector({ wsAlerts = [], wsProgress }) {
           </div>
         </div>
       )}
+
+      {/* 📜 Inspection & Test Run History Log Table (Visible on both Localhost & Vercel) */}
+      <div className="card" style={{ marginTop: '28px' }}>
+        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <History size={18} color="var(--accent-cyan)" />
+            <span className="card-title">📜 Real-Time Inspection & Test Run History Log ({inspectionHistory.length})</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {inspectionHistory.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleExportHistoryCSV}
+                  className="btn btn-secondary btn-sm"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', padding: '4px 10px' }}
+                >
+                  <Download size={13} />
+                  <span>Export CSV</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInspectionHistory([])}
+                  className="btn btn-secondary btn-sm"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', padding: '4px 10px', color: 'var(--severity-critical)' }}
+                >
+                  <Trash2 size={13} />
+                  <span>Clear Logs</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {inspectionHistory.length === 0 ? (
+          <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+            No test runs logged yet. Click <strong>"Inspect & Analyze Real-Time Traffic"</strong> above to execute a run and generate live logs & notifications.
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', fontFamily: 'var(--font-mono)' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-default)', background: 'var(--bg-surface)', textAlign: 'left' }}>
+                  <th style={{ padding: '10px' }}># Run</th>
+                  <th style={{ padding: '10px' }}>Time</th>
+                  <th style={{ padding: '10px' }}>Target Host</th>
+                  <th style={{ padding: '10px' }}>Observed Velocity</th>
+                  <th style={{ padding: '10px' }}>Score</th>
+                  <th style={{ padding: '10px' }}>Severity</th>
+                  <th style={{ padding: '10px' }}>Classification Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inspectionHistory.map((h, idx) => (
+                  <tr key={h.id || idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: idx === 0 ? 'rgba(0,240,255,0.03)' : 'transparent' }}>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>#{h.runNumber || (inspectionHistory.length - idx)}</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>{h.timestamp}</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-primary)', fontWeight: 700 }}>{h.hostname}</td>
+                    <td style={{ padding: '8px 10px', color: h.color || 'var(--accent-cyan)', fontWeight: 800 }}>
+                      {h.rate?.toLocaleString()} req/s
+                    </td>
+                    <td style={{ padding: '8px 10px', color: h.color || 'var(--accent-cyan)', fontWeight: 700 }}>
+                      {h.score?.toFixed(1)}/100
+                    </td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <span className={`severity-badge ${(h.severity || 'low').toLowerCase()}`}>
+                        {h.severity}
+                      </span>
+                    </td>
+                    <td style={{ padding: '8px 10px', color: h.color || 'var(--text-secondary)', fontSize: '11px' }}>
+                      {h.statusText}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* 20 Unidirectional ML Features Matrix Modal */}
       {showFeaturesModal && (
