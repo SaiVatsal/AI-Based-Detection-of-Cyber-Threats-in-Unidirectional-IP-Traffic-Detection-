@@ -217,6 +217,8 @@ campusshield-ai/
 5. **Single-model approach** — One Isolation Forest; production would use ensemble methods
 6. **SQLite** — Adequate for MVP; production would use PostgreSQL with connection pooling
 
+nice try 
+
 ---
 
 ## License
